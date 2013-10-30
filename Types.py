@@ -192,8 +192,8 @@ class NormalVectorField(VectorField):
         ids_tri = mesh.GetIdsFromFilter(filter_linear_tri)
         ids_quad = mesh.GetIdsFromFilter(filter_linear_quad)
 
-        self.tria3 = [Tria3(mesh,id_tri) for id_tri from ids_tri]
-        self.quad4 = [Tria3(mesh,id_tri) for id_tri from ids_tri]
+        self.tria3 = [Tria3(mesh,id_tri) for id_tri in ids_tri]
+        self.quad4 = [Tria3(mesh,id_tri) for id_tri in ids_tri]
 
     def meanNormalFormula(self,elems):
         """

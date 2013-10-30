@@ -26,6 +26,7 @@ import smesh
 import SMESH
 
 from smesh import GetFilter, EDGE, FACE, VOLUME, FT_LinearOrQuadratic, Geom_TRIANGLE, Geom_QUADRANGLE
+from SMESH import Entity_Triangle, Entity_Quadrangle
 
 from numpy import array, ndarray, arange
 from numpy import float64 as data_type
@@ -37,7 +38,7 @@ def find_mesh(descriptive_string):
     Help function to find mesh in a study and converts it to smesh mesh
     """
     mesh = salome.myStudy.FindObject(descriptive_string).GetObject()
-    return smesh.Mesh(mesh,descriptive_string)
+    return smesh.Mesh(mesh) #,descriptive_string)
 
 
 def apply_linear_elements(mesh,elem_ids):
@@ -45,10 +46,11 @@ def apply_linear_elements(mesh,elem_ids):
     Give the elements in the list the right container classes
     """
     elem_list = []
-    for elem in elems:
-        if Mesh.GetElementGeomType(elem) == Geom_TRIANGLE:
-            elem_list += [Tria3(elem)]
-        elif Mesh.GetElementGeomType(elem) == Geom_QUADRANGLE:
-            elem_list += [Quad4(elem)]
-    
+    for elem in elem_ids:
+        print(mesh.GetElementGeomType(elem)) 
+        if mesh.GetElementGeomType(elem) == Entity_Triangle:
+            elem_list += [Tria3(mesh,elem)]
+        elif mesh.GetElementGeomType(elem) == Entity_Quadrangle:
+            elem_list += [Quad4(mesh,elem)]
+
     return elem_list
