@@ -183,7 +183,7 @@ class NormalVectorField(VectorField):
     """
     def __init__(self,mesh):
         
-        self.mesh = Mesh
+        self.mesh = mesh
 
         # filter linear and triangle elements
         filter_linear_tri = GetFilter(FACE, FT_LinearOrQuadratic, Geom_TRIANGLE)
@@ -203,7 +203,7 @@ class NormalVectorField(VectorField):
         result = zeros(3)
 
         for elem in elems:
-            result += elem.getNormal()
+            result += elem.computeNormal(store=False)
 
         return result/len(elems)
 
@@ -216,7 +216,9 @@ class NormalVectorField(VectorField):
         Mesh = self.mesh
 
         elems = Mesh.GetNodeInverseElements(node_id)
-        elems = apply_linear_elements(elems)
+
+        from Tools import apply_linear_elements
+        elems = apply_linear_elements(Mesh,elems)
         
         return self.meanNormalFormula(elems)
 

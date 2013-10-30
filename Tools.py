@@ -47,7 +47,6 @@ def apply_linear_elements(mesh,elem_ids):
     """
     elem_list = []
     for elem in elem_ids:
-        print(mesh.GetElementGeomType(elem)) 
         if mesh.GetElementGeomType(elem) == Entity_Triangle:
             elem_list += [Tria3(mesh,elem)]
         elif mesh.GetElementGeomType(elem) == Entity_Quadrangle:
