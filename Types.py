@@ -96,7 +96,7 @@ class Tria3(FaceElement):
         vec1 = array(p1) - array(p0)
         vec2 = array(p2) - array(p0)
         vec_normal = cross(vec1, vec2)
-        return vec_normal/norm(vec_normal), norm(vec_normal)
+        return vec_normal/norm(vec_normal), norm(vec_normal)/2.0
 
     def computeNormal(self,store = True):
         """
