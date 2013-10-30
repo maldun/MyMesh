@@ -79,7 +79,7 @@ class FaceElement(Element):
 
 class Tria3(FaceElement):
     """
-    Simple linear Triangles with 3 corners
+    Simple linear triangles with 3 corners
     """
     
     def computeNormalOp(self):
@@ -117,4 +117,43 @@ class Tria3(FaceElement):
             return self.computeNormalOp()[1]
 
         
+
+class Quad4(FaceElement):
+    """
+    Simple linear quadrangles with 4 corners
+    """
+    
+    def computeNormalOp(self):
+        """
+        Computes the normal of the triangle.
+        This function only executes the computation
+        """
+
+        nodes = self.mesh.GetElemNodes(self.getIdNr())
+        p0 = self.mesh.GetNodeXYZ(nodes[0])
+        p1 = self.mesh.GetNodeXYZ(nodes[1])
+        p2 = self.mesh.GetNodeXYZ(nodes[-1])
+        
+        vec1 = array(p1) - array(p0)
+        vec2 = array(p2) - array(p0)
+        vec_normal = cross(vec1, vec2)
+        return vec_normal/norm(vec_normal), norm(vec_normal)
+
+    def computeNormal(self,store = True):
+        """
+        It stores the vector in the object per default.
+        """
+        if store:
+            self.normal = self.computeNormalOp()[0]
+        else:
+            return self.computeNormalOp()[0]
+
+    def computeArea(self,store = True):
+        """
+        It stores the vector in the object per default.
+        """
+        if store:
+            self.area = self.computeNormalOp()[1]
+        else:
+            return self.computeNormalOp()[1]
 
