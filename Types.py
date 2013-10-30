@@ -25,7 +25,9 @@ import GEOM
 import smesh
 import SMESH
 
-from numpy import array, ndarray, arange, cross
+from smesh import GetFilter, EDGE, FACE, VOLUME, FT_LinearOrQuadratic, Geom_TRIANGLE, Geom_QUADRANGLE
+
+from numpy import array, ndarray, arange, cross, zeros
 from numpy.linalg import norm
 from numpy import float64 as data_type
 
@@ -63,6 +65,8 @@ class FaceElement(Element):
     """
     Template class for faces
     """
+    def getNodes(self):
+        return self.mesh.GetElemNodes(self.getIdNr())
 
     def computeNormal(self,store = True):
         raise NotImplementedError("Error: Not implemented!")
@@ -88,7 +92,7 @@ class Tria3(FaceElement):
         This function only executes the computation
         """
 
-        nodes = self.mesh.GetElemNodes(self.getIdNr())
+        nodes = self.getNodes()
         p0 = self.mesh.GetNodeXYZ(nodes[0])
         p1 = self.mesh.GetNodeXYZ(nodes[1])
         p2 = self.mesh.GetNodeXYZ(nodes[-1])
@@ -157,3 +161,69 @@ class Quad4(FaceElement):
         else:
             return self.computeNormalOp()[1]
 
+
+
+class VectorField(object):
+    """
+    Class that represents a vector field which is applied on the nodes of 
+    mesh. Thus is holds also the information about the mesh, on which it works.
+    """
+
+    def __init__(self,mesh):
+        
+        self.mesh = Mesh
+
+    
+class NormalVectorField(VectorField):
+
+    """
+    Class to compute the normal vector field on a mesh.
+    The current version only works on surfaces, and on
+    linear elements. Hopefully this will change.
+    """
+    def __init__(self,mesh):
+        
+        self.mesh = Mesh
+
+        # filter linear and triangle elements
+        filter_linear_tri = GetFilter(FACE, FT_LinearOrQuadratic, Geom_TRIANGLE)
+        filter_linear_quad = GetFilter(FACE, FT_LinearOrQuadratic, Geom_QUADRANGLE)
+
+        ids_tri = mesh.GetIdsFromFilter(filter_linear_tri)
+        ids_quad = mesh.GetIdsFromFilter(filter_linear_quad)
+
+        self.tria3 = [Tria3(mesh,id_tri) for id_tri from ids_tri]
+        self.quad4 = [Tria3(mesh,id_tri) for id_tri from ids_tri]
+
+    def meanNormalFormula(self,elems):
+        """
+        Compute the mean normal
+        """
+
+        result = zeros(3)
+
+        for elem in elems:
+            result += elem.getNormal()
+
+        return result/len(elems)
+
+    def getNormalOnNode(self,node_id):
+        """
+        We compute the normal in one node,
+        (currently) with help of the mean value
+        formula.
+        """
+        Mesh = self.mesh
+
+        elems = Mesh.GetNodeInverseElements(node_id)
+        elems = apply_linear_elements(elems)
+        
+        return self.meanNormalFormula(elems)
+
+
+        
+        
+        
+        
+        
+    

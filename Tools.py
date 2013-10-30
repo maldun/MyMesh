@@ -25,8 +25,12 @@ import GEOM
 import smesh
 import SMESH
 
+from smesh import GetFilter, EDGE, FACE, VOLUME, FT_LinearOrQuadratic, Geom_TRIANGLE, Geom_QUADRANGLE
+
 from numpy import array, ndarray, arange
 from numpy import float64 as data_type
+
+from Types import Element, Tria3, Quad4
 
 def find_mesh(descriptive_string):
     """
@@ -36,3 +40,15 @@ def find_mesh(descriptive_string):
     return smesh.Mesh(mesh,descriptive_string)
 
 
+def apply_linear_elements(mesh,elem_ids):
+    """
+    Give the elements in the list the right container classes
+    """
+    elem_list = []
+    for elem in elems:
+        if Mesh.GetElementGeomType(elem) == Geom_TRIANGLE:
+            elem_list += [Tria3(elem)]
+        elif Mesh.GetElementGeomType(elem) == Geom_QUADRANGLE:
+            elem_list += [Quad4(elem)]
+    
+    return elem_list
