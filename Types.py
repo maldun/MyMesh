@@ -196,6 +196,90 @@ class VectorField(object):
         self.scalarMultiplication(scalar)
         return self
 
+    def applyVectorOnNode(self,node_id, mesh = None):
+        """
+        Apply the vector field on a given node. This method creates the
+        displaced node in the given mesh, and returns the index of the new node.
+        The node is created in the current mesh per defualt, but it is possible 
+        to add it to a different mesh.
+
+        Arguments:
+        - `self`: 
+        - `node_id`: integer with the Id of the node we want to apply the vector.
+        """
+        
+        if mesh is None:
+            mesh = self.mesh 
+
+        node_vec = self.mesh.GetNodeXYZ(node_id)
+        translated_node_vec = node_vec + self.getVectorOnNode(node_id)
+        new_node = mesh.AddNode(*translated_node_vec.tolist())
+        
+        return new_node
+
+    def applyVectorFieldOnFace(self,face,mesh=None, table = {}):
+        """
+        Applies the Vector field on a given surface. The Face is either saved in
+        the current mesh (default) or can be saved in a different mesh
+
+        Arguments:
+        - `self`:
+        - `face`: The face to translate
+        - `mesh`: the mesh where the face should belong to. Default is self.mesh
+        - `table`: returns a dict with the corespondence table of the nodes.
+
+        returns: The id of the new face
+        """
+        if mesh is None:
+            mesh = self.mesh
+
+        elem_nodes = self.mesh.GetElemNodes(face)
+        new_nodes = []
+        for node in elem_nodes:
+            try:
+                new_nodes += [table[node]]
+            except KeyError:
+                new_nodes += [self.applyVectorOnNode(node,mesh)]
+
+        new_face = mesh.AddFace(new_nodes)
+
+        # update table
+        table_out = table.copy() # copy table to avoid overiding in memory
+        table_out.update([[elem_nodes[i],new_nodes[i]] for i in range(len(elem_nodes))])
+
+        return new_face, table_out
+        
+
+    def applyVectorFieldOnSurface(self,mesh=None,group=None):
+        """
+        This method applies the vector field on a surface and creates
+        a translated one. Optional the new surface can be stored in a new mesh.
+
+        Arguments:
+        - `self`: 
+        - `mesh`: Optional smesh.Mesh instance. Per defualt it is self.mesh
+        - `group`: Optional group of elements on which we apply the vector field.
+        """
+        
+        if mesh is None:
+            mesh = self.mesh
+
+        if group is None:
+            nodes = self.mesh.GetNodesId()
+            faces = self.mesh.GetElementsByType(FACE)
+        else:
+            nodes = group.GetNodeIDs()
+            faces = group.GetIDs()
+
+        lookup_table = {}
+        new_face_ids = []
+        for face in faces:
+
+            face_id, new_lookup = self.applyVectorFieldOnFace(face,mesh,new_nodes = True)
+            new_face_ids += [face_id]
+            lookup_table
+            
+
 class NormalVectorField(VectorField):
 
     """
@@ -250,15 +334,6 @@ class NormalVectorField(VectorField):
         
         return self.meanNormalFormula(elems)
 
-    def applyVectorOnNode(self,node_id):
-        """
-        Apply the vector field on a given node.
-        Arguments:
-        - `self`: 
-        - `node_id`: integer with the Id of the node we want to apply the vector.
-        """
-
-        pass
         
         
         
