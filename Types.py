@@ -173,6 +173,9 @@ class VectorField(object):
         
         self.mesh = Mesh
 
+    def getVectorOnNode(self,node_id):
+        raise NotImplementedError('Error: This method is a stub!')
+
     
 class NormalVectorField(VectorField):
 
@@ -207,7 +210,7 @@ class NormalVectorField(VectorField):
 
         return result/len(elems)
 
-    def getNormalOnNode(self,node_id):
+    def getVectorOnNode(self,node_id):
         """
         We compute the normal in one node,
         (currently) with help of the mean value
@@ -222,7 +225,7 @@ class NormalVectorField(VectorField):
         
         return self.meanNormalFormula(elems)
 
-
+    #def 
         
         
         
