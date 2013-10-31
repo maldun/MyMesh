@@ -246,10 +246,11 @@ class VectorField(object):
         return new_face, new_nodes
         
 
-    def extrudeSurface(self,group=None, edge_groups = []):
+    def computeSurfaceExtrusion(self,group=None, edge_groups = []):
         """
         This method applies the vector field on a surface and creates
-        a translated one. Optional the new surface can be stored in a new mesh.
+        a translated one. This method makes the computation only.
+        The method surfaceExtrusion also adds the groups to the mesh.
 
         Arguments:
         - `self`: 
@@ -304,6 +305,43 @@ class VectorField(object):
         #else:
         
         return new_face_ids, new_vol_ids, lookup_table
+    
+    def extrudeSurface(self,group=None, edge_groups = []):
+        """
+        This method applies the vector field on a surface and creates
+        a translated one. Optional the new surface can be stored in a new mesh.
+
+        Arguments:
+        - `self`: 
+        - `mesh`: Optional smesh.Mesh instance. Per defualt it is self.mesh
+        - `group`: Optional group of elements on which we apply the vector field.
+        - `table`: Variable if lookup table should be returned for further steps.
+        """
+
+        mesh = self.mesh
+
+        if edge_groups:
+            new_face_ids, new_vol_ids, new_edge_groups, new_edge_groups_faces, lookup_table = self.computeSurfaceExtrusion(group=group, edge_groups = edge_groups)
+        
+        else:
+            new_face_ids, new_vol_ids, lookup_table = self.computeSurfaceExtrusion(group=group, edge_groups = edge_groups)
+        # add face and volume group    
+        if group:
+            mesh.MakeGroupByIds(group.GetName()+'_extruded',FACE,new_face_ids)
+            mesh.MakeGroupByIds(group.GetName()+'_volumes',VOLUME,new_vol_ids)
+        else:
+            mesh.MakeGroupByIds('Faces_extruded',FACE,new_face_ids)
+            mesh.MakeGroupByIds('Extrusion_Volume',VOLUME,new_vol_ids)
+        
+
+        if edge_groups:
+            for i in range(len(edge_groups)):
+                mesh.MakeGroupByIds(edge_groups[i].GetName()+'_extruded',EDGE,new_edge_groups[i])
+                mesh.MakeGroupByIds(edge_groups[i].GetName()+'_extruded_faces',EDGE,new_edge_groups_faces[i])
+            return new_face_ids, new_vol_ids, new_edge_groups, new_edge_groups_faces, lookup_table 
+
+        else:
+            return new_face_ids, new_vol_ids, lookup_table
 
     def applyVectorFieldOnSurface(self,mesh=None,group=None):
         """
