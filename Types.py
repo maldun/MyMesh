@@ -335,10 +335,11 @@ class VectorField(object):
         if edge_groups:
             bnd_faces = mesh.MakeBoundaryMesh(vol_group)
             bnd_faces = mesh.MakeGroupByIds(FACE,bnd_faces)
+            bnd_nodes = bnd_faces.GetNodeIDs()
+
             for i in range(len(edge_groups)):
                 mesh.MakeGroupByIds(edge_groups[i].GetName()+'_extruded',EDGE,new_edge_groups[i])
                 #mesh.MakeGroupByIds(edge_groups[i].GetName()+'_extruded_faces',FACE,new_edge_groups_faces[i])
-                
 
             return new_face_ids, new_vol_ids, new_edge_groups, lookup_table 
 
