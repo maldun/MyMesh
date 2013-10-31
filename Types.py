@@ -246,7 +246,7 @@ class VectorField(object):
         return new_face, new_nodes
         
 
-    def extrudeSurface(self,group=None, table = False):
+    def extrudeSurface(self,group=None, edge_groups = []):
         """
         This method applies the vector field on a surface and creates
         a translated one. Optional the new surface can be stored in a new mesh.
@@ -281,6 +281,28 @@ class VectorField(object):
             # now add volume elements
             new_vol_ids += [mesh.AddVolume(elem_nodes + new_nodes)]
 
+
+        if edge_groups:
+            edge_groups_faces = []
+            new_edge_groups = []
+            for edge_group in edge_groups:
+                edge_group_faces = []
+                #new_edge_group = mesh.CreateEmptyGroup(smesh.EDGE, edge_group.GetName() + "_extruded")
+                new_edges = []
+                for edge in edge_group.GetIDs():
+                    edge_nodes = mesh.GetElemNodes(edge)
+                    new_edge_nodes = [lookup_table[node] for node in edge_nodes]
+                    new_edges += [mesh.AddEdge(new_edge_nodes)]
+                    
+                    edge_group_faces += [mesh.AddFace(edge_nodes)]
+                    
+                new_edge_groups += [new_edges]
+                edge_groups_faces += [edge_group_faces]
+            
+            return new_face_ids, new_vol_ids, new_edge_groups, edge_groups_faces, lookup_table
+        
+        #else:
+        
         return new_face_ids, new_vol_ids, lookup_table
 
     def applyVectorFieldOnSurface(self,mesh=None,group=None):
