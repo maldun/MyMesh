@@ -244,10 +244,46 @@ class VectorField(object):
         new_face = mesh.AddFace(new_nodes)
 
         # new table
-        table_out = dict([[elem_nodes[i],new_nodes[i]] for i in range(len(elem_nodes))])
+        #table_out = dict([[elem_nodes[i],new_nodes[i]] for i in range(len(elem_nodes))])
 
-        return new_face, table_out
+        return new_face, new_nodes
         
+
+    def extrudeSurface(self,group=None):
+        """
+        This method applies the vector field on a surface and creates
+        a translated one. Optional the new surface can be stored in a new mesh.
+
+        Arguments:
+        - `self`: 
+        - `mesh`: Optional smesh.Mesh instance. Per defualt it is self.mesh
+        - `group`: Optional group of elements on which we apply the vector field.
+        """
+        
+
+        mesh = self.mesh
+
+        if group is None:
+            faces = self.mesh.GetElementsByType(FACE)
+        else:
+            faces = group.GetIDs()
+
+        lookup_table = {}
+        new_face_ids = []
+        new_vol_ids = []
+        for face in faces:
+
+            face_id, new_nodes = self.applyVectorFieldOnFace(face,mesh,lookup_table)
+            new_face_ids += [face_id]
+
+            # update lookup table
+            elem_nodes = self.mesh.GetElemNodes(face)
+            new_lookup = [[elem_nodes[i],new_nodes[i]] for i in range(len(elem_nodes))]
+            lookup_table.update(new_lookup)
+            # now add volume elements
+            new_vol_ids += [mesh.AddVolume(elem_nodes + new_nodes)]
+
+        return new_face_ids, new_vol_ids
 
     def applyVectorFieldOnSurface(self,mesh=None,group=None):
         """
@@ -274,12 +310,16 @@ class VectorField(object):
         new_face_ids = []
         for face in faces:
 
-            face_id, new_lookup = self.applyVectorFieldOnFace(face,mesh,lookup_table)
+            face_id, new_nodes = self.applyVectorFieldOnFace(face,mesh,lookup_table)
             new_face_ids += [face_id]
+
+            # update lookup table
+            elem_nodes = self.mesh.GetElemNodes(face)
+            new_lookup = [[elem_nodes[i],new_nodes[i]] for i in range(len(elem_nodes))]
             lookup_table.update(new_lookup)
 
         return new_face_ids
-            
+
 
 class NormalVectorField(VectorField):
 
