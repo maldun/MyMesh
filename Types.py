@@ -219,7 +219,12 @@ class NormalVectorField(VectorField):
 
     def meanNormalFormula(self,elems):
         """
-        Compute the mean normal
+        Compute the mean normal, whith the formulas
+
+        math:: 
+
+            m(x) = (\sum_{\Delta \in Faces(x)} n_{\Delta}(x))/\#Faces(x)
+            n(x) = m(x)/||m(x)||
         """
 
         result = zeros(3)
@@ -227,7 +232,8 @@ class NormalVectorField(VectorField):
         for elem in elems:
             result += elem.computeNormal(store=False)
 
-        return result/len(elems)
+        result /= len(elems)
+        return result/norm(result)
 
     def computeVectorOnNode(self,node_id):
         """
