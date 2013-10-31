@@ -169,14 +169,33 @@ class VectorField(object):
     mesh. Thus is holds also the information about the mesh, on which it works.
     """
 
-    def __init__(self,mesh):
+    def __init__(self,mesh, scalar = 1.0):
         
-        self.mesh = Mesh
+        self.mesh = mesh
+        self.scalar = scalar
 
     def getVectorOnNode(self,node_id):
-        raise NotImplementedError('Error: This method is a stub!')
+        return self.computeVectorOnNode(node_id)*self.getScalar()
 
+    def computeVectorOnNode(self,node_id):
+        raise NotImplementedError('Error: This method is a stub')
+
+    def getScalar(self): return self.scalar
+
+    def setScalar(self,scalar): self.scalar = scalar
     
+    def scalarMultiplication(self,scalar):
+        """
+        Implements multiplication with scalar.
+        """
+        mult_scalar = self.getScalar()*scalar
+        self.setScalar(mult_scalar)
+
+    def __rmul__(self,scalar): 
+        
+        self.scalarMultiplication(scalar)
+        return self
+
 class NormalVectorField(VectorField):
 
     """
@@ -186,7 +205,7 @@ class NormalVectorField(VectorField):
     """
     def __init__(self,mesh):
         
-        self.mesh = mesh
+        super(NormalVectorField,self).__init__(mesh)
 
         # filter linear and triangle elements
         filter_linear_tri = GetFilter(FACE, FT_LinearOrQuadratic, Geom_TRIANGLE)
@@ -210,7 +229,7 @@ class NormalVectorField(VectorField):
 
         return result/len(elems)
 
-    def getVectorOnNode(self,node_id):
+    def computeVectorOnNode(self,node_id):
         """
         We compute the normal in one node,
         (currently) with help of the mean value
@@ -225,7 +244,16 @@ class NormalVectorField(VectorField):
         
         return self.meanNormalFormula(elems)
 
-    #def 
+    def applyVectorOnNode(self,node_id):
+        """
+        Apply the vector field on a given node.
+        Arguments:
+        - `self`: 
+        - `node_id`: integer with the Id of the node we want to apply the vector.
+        """
+
+        pass
+        
         
         
         
