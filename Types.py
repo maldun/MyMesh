@@ -243,9 +243,8 @@ class VectorField(object):
 
         new_face = mesh.AddFace(new_nodes)
 
-        # update table
-        table_out = table.copy() # copy table to avoid overiding in memory
-        table_out.update([[elem_nodes[i],new_nodes[i]] for i in range(len(elem_nodes))])
+        # new table
+        table_out = dict([[elem_nodes[i],new_nodes[i]] for i in range(len(elem_nodes))])
 
         return new_face, table_out
         
@@ -275,9 +274,11 @@ class VectorField(object):
         new_face_ids = []
         for face in faces:
 
-            face_id, new_lookup = self.applyVectorFieldOnFace(face,mesh,new_nodes = True)
+            face_id, new_lookup = self.applyVectorFieldOnFace(face,mesh,lookup_table)
             new_face_ids += [face_id]
-            lookup_table
+            lookup_table.update(new_lookup)
+
+        return new_face_ids
             
 
 class NormalVectorField(VectorField):
