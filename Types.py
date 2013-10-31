@@ -243,13 +243,10 @@ class VectorField(object):
 
         new_face = mesh.AddFace(new_nodes)
 
-        # new table
-        #table_out = dict([[elem_nodes[i],new_nodes[i]] for i in range(len(elem_nodes))])
-
         return new_face, new_nodes
         
 
-    def extrudeSurface(self,group=None):
+    def extrudeSurface(self,group=None, table = False):
         """
         This method applies the vector field on a surface and creates
         a translated one. Optional the new surface can be stored in a new mesh.
@@ -258,6 +255,7 @@ class VectorField(object):
         - `self`: 
         - `mesh`: Optional smesh.Mesh instance. Per defualt it is self.mesh
         - `group`: Optional group of elements on which we apply the vector field.
+        - `table`: Variable if lookup table should be returned for further steps.
         """
         
 
@@ -283,7 +281,7 @@ class VectorField(object):
             # now add volume elements
             new_vol_ids += [mesh.AddVolume(elem_nodes + new_nodes)]
 
-        return new_face_ids, new_vol_ids
+        return new_face_ids, new_vol_ids, lookup_table
 
     def applyVectorFieldOnSurface(self,mesh=None,group=None):
         """
@@ -318,7 +316,7 @@ class VectorField(object):
             new_lookup = [[elem_nodes[i],new_nodes[i]] for i in range(len(elem_nodes))]
             lookup_table.update(new_lookup)
 
-        return new_face_ids
+        return new_face_ids, lookup_table
 
 
 class NormalVectorField(VectorField):
