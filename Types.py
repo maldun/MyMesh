@@ -305,10 +305,10 @@ class VectorField(object):
         
         return new_face_ids, new_vol_ids, lookup_table
     
-    def extrudeSurface(self,group=None, edge_groups = []):
+    def extrudeSurface(self,group=None, edge_groups = [], create_boundary_elements = True):
         """
         This method applies the vector field on a surface and creates
-        a translated one. Optional the new surface can be stored in a new mesh.
+        a translated one. 
 
         Arguments:
         - `self`: 
@@ -328,39 +328,84 @@ class VectorField(object):
             new_face_ids, new_vol_ids, lookup_table = self.computeSurfaceExtrusion(group=group, edge_groups = edge_groups)
         # add face and volume group    
         if group:
-            mesh.MakeGroupByIds(group.GetName()+'_extruded' + str(self._applied_extrusions),FACE,new_face_ids)
-            vol_group = mesh.MakeGroupByIds(group.GetName()+'_volumes' + str(self._applied_extrusions),VOLUME,new_vol_ids)
+            face_group = mesh.MakeGroupByIds(group.GetName()+'_extruded_faces' + str(self._applied_extrusions),FACE,new_face_ids)
+            vol_group = mesh.MakeGroupByIds(group.GetName()+'_extruded_volumes' + str(self._applied_extrusions),VOLUME,new_vol_ids)
         else:
-            mesh.MakeGroupByIds(mesh.GetName() + '_Faces_extruded' + str(self._applied_extrusions),FACE,new_face_ids)
-            vol_group = mesh.MakeGroupByIds(mesh.GetName() + '_Extrusion_Volume' + str(self._applied_extrusions),VOLUME,new_vol_ids)
+            face_group = mesh.MakeGroupByIds(mesh.GetName() + '_extruded_faces' + str(self._applied_extrusions),FACE,new_face_ids)
+            vol_group = mesh.MakeGroupByIds(mesh.GetName() + '_extruded_volumes' + str(self._applied_extrusions),VOLUME,new_vol_ids)
         
-        bnd_faces = mesh.MakeBoundaryMesh(vol_group)
+        if create_boundary_elements:
+            bnd_faces = mesh.MakeBoundaryMesh(vol_group)
         if edge_groups:
             
             #bnd_faces = mesh.MakeGroupByIds("boundary_faces",FACE,bnd_faces)
             #bnd_nodes = bnd_faces.GetNodeIDs()
 
+            new_salome_edge_groups = []
+            new_salome_edge_face_groups = []
             for i in range(len(edge_groups)):
-                new_edge_group = mesh.MakeGroupByIds(edge_groups[i].GetName()+'_extruded' + str(self._applied_extrusions),EDGE,new_edge_groups[i])
+                new_salome_edge_groups += [mesh.MakeGroupByIds(edge_groups[i].GetName()+'_extruded' + str(self._applied_extrusions),EDGE,new_edge_groups[i])]
                 
-                #find faces belonging to new created edge groups
-                new_edge_group_faces = []
-                old_edges = edge_groups[i].GetIDs()
-                new_edges = new_edge_groups[i]
-                for nr_edge in range(len(old_edges)):
+                if create_boundary_elements:
+                    #find faces belonging to new created edge groups
+                    new_edge_group_faces = []
+                    old_edges = edge_groups[i].GetIDs()
+                    new_edges = new_edge_groups[i]
+                    for nr_edge in range(len(old_edges)):
                     
-                    nodes_edge = mesh.GetElemNodes(old_edges[nr_edge])
-                    nodes_new_edge = mesh.GetElemNodes(new_edges[nr_edge])
-                    new_edge_group_faces += [mesh.FindElementByNodes(nodes_edge + nodes_new_edge)]
+                        nodes_edge = mesh.GetElemNodes(old_edges[nr_edge])
+                        nodes_new_edge = mesh.GetElemNodes(new_edges[nr_edge])
+                        new_edge_group_faces += [mesh.FindElementByNodes(nodes_edge + nodes_new_edge)]
                     
-                mesh.MakeGroupByIds(edge_groups[i].GetName()+'_extruded_faces' + str(self._applied_extrusions),FACE,new_edge_group_faces)
+                        new_salome_edge_face_groups += [mesh.MakeGroupByIds(edge_groups[i].GetName()+'_extruded_faces' + str(self._applied_extrusions),FACE,new_edge_group_faces)]
 
             salome.sg.updateObjBrowser(0)
-            return new_face_ids, new_vol_ids, new_edge_groups, lookup_table 
+            return face_group, vol_group, new_salome_edge_groups, new_salome_edge_face_groups, bnd_faces, lookup_table 
 
         else:
             salome.sg.updateObjBrowser(0)
-            return new_face_ids, new_vol_ids, lookup_table
+            return face_group, vol_group, [], [], bnd_faces,lookup_table
+
+
+    # # def extrudeSurfaceTimes(self,k,group=None, edge_groups = []):
+    # #     """
+    # #     This method applies the vector field on a surface and creates
+    # #     a translated one over k steps.
+
+    # #     Arguments:
+    # #     - `self`: 
+    # #     - `k`: number of extrusions, or list of extrusion thicknesses
+    # #     - `mesh`: Optional smesh.Mesh instance. Per defualt it is self.mesh
+    # #     - `group`: Optional group of elements on which we apply the vector field.
+    # #     - `table`: Variable if lookup table should be returned for further steps.
+    # #     """
+    # #     if isinstance(k,list):
+    # #         thicknesses = k
+    # #         k = len(k)
+    # #     else:
+    # #         thicknesses = []
+        
+    # #     face_groups = [None]*k
+    # #     vol_groups = [None]*k
+    # #     extruded_edge_groups = [None]*k
+    # #     extruded_edge_surface_groups = [None]*k
+    # #     bnd_face_groups = [None]*k
+    # #     lookup_tables = [None]*k
+        
+    # #     face_groups[-1] = group
+    # #     extruded_edge_groups[-1] = edge_groups
+
+    # #     for i in range(k):
+    # #         if thicknesses:
+    # #             self.setScalar(thicknesses[i])
+
+    # #         face_groups[i], vol_groups[i], extruded_edge_groups[i], extruded_edge_surface_groups[i], bnd_face_groups[i], lookup_tables[i] = self.extrudeSurface(face_groups[i-1],extruded_edge_groups[i-1])
+
+            
+                
+
+    #     return face_groups, vol_groups, extruded_edge_groups, extruded_edge_surface_groups, bnd_face_groups, lookup_tables
+            
 
     def applyVectorFieldOnSurface(self,mesh=None,group=None):
         """
