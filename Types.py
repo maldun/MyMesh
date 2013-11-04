@@ -334,12 +334,23 @@ class VectorField(object):
 
         if edge_groups:
             bnd_faces = mesh.MakeBoundaryMesh(vol_group)
-            bnd_faces = mesh.MakeGroupByIds(FACE,bnd_faces)
-            bnd_nodes = bnd_faces.GetNodeIDs()
+            #bnd_faces = mesh.MakeGroupByIds("boundary_faces",FACE,bnd_faces)
+            #bnd_nodes = bnd_faces.GetNodeIDs()
 
             for i in range(len(edge_groups)):
-                mesh.MakeGroupByIds(edge_groups[i].GetName()+'_extruded',EDGE,new_edge_groups[i])
-                #mesh.MakeGroupByIds(edge_groups[i].GetName()+'_extruded_faces',FACE,new_edge_groups_faces[i])
+                new_edge_group = mesh.MakeGroupByIds(edge_groups[i].GetName()+'_extruded',EDGE,new_edge_groups[i])
+                
+                #find faces belonging to new created edge groups
+                new_edge_group_faces = []
+                old_edges = edge_groups[i].GetIDs()
+                new_edges = new_edge_group.GetIDs()
+                for nr_edge in range(len(old_edges)):
+                    
+                    nodes_edge = mesh.GetElemNodes(old_edges[nr_edge])
+                    nodes_new_edge = mesh.GetElemNodes(new_edges[nr_edge])
+                    new_edge_group_faces += [mesh.FindElementByNodes(nodes_edge + nodes_new_edge)]
+                    
+                mesh.MakeGroupByIds(edge_groups[i].GetName()+'_extruded_faces',FACE,new_edge_group_faces)
 
             return new_face_ids, new_vol_ids, new_edge_groups, lookup_table 
 
