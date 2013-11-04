@@ -363,7 +363,7 @@ class VectorField(object):
                         nodes_new_edge = mesh.GetElemNodes(new_edges[nr_edge])
                         new_edge_group_faces += [mesh.FindElementByNodes(nodes_edge + nodes_new_edge)]
                     
-                        new_salome_edge_face_groups += [mesh.MakeGroupByIds(edge_groups[i].GetName()+'_extruded_faces' + str(self._applied_extrusions),FACE,new_edge_group_faces)]
+                    new_salome_edge_face_groups += [mesh.MakeGroupByIds(edge_groups[i].GetName()+'_extruded_faces' + str(self._applied_extrusions),FACE,new_edge_group_faces)]
 
             salome.sg.updateObjBrowser(0)
             return face_group, vol_group, new_salome_edge_groups, new_salome_edge_face_groups, bnd_faces, lookup_table 
