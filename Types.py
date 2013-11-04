@@ -331,8 +331,8 @@ class VectorField(object):
             mesh.MakeGroupByIds(group.GetName()+'_extruded' + str(self._applied_extrusions),FACE,new_face_ids)
             vol_group = mesh.MakeGroupByIds(group.GetName()+'_volumes' + str(self._applied_extrusions),VOLUME,new_vol_ids)
         else:
-            mesh.MakeGroupByIds('Faces_extruded' + str(self._applied_extrusions),FACE,new_face_ids)
-            vol_group = mesh.MakeGroupByIds('Extrusion_Volume' + str(self._applied_extrusions),VOLUME,new_vol_ids)
+            mesh.MakeGroupByIds(mesh.GetName() + '_Faces_extruded' + str(self._applied_extrusions),FACE,new_face_ids)
+            vol_group = mesh.MakeGroupByIds(mesh.GetName() + '_Extrusion_Volume' + str(self._applied_extrusions),VOLUME,new_vol_ids)
         
         bnd_faces = mesh.MakeBoundaryMesh(vol_group)
         if edge_groups:
@@ -355,9 +355,11 @@ class VectorField(object):
                     
                 mesh.MakeGroupByIds(edge_groups[i].GetName()+'_extruded_faces' + str(self._applied_extrusions),FACE,new_edge_group_faces)
 
+            salome.sg.updateObjBrowser(0)
             return new_face_ids, new_vol_ids, new_edge_groups, lookup_table 
 
         else:
+            salome.sg.updateObjBrowser(0)
             return new_face_ids, new_vol_ids, lookup_table
 
     def applyVectorFieldOnSurface(self,mesh=None,group=None):
