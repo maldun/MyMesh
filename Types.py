@@ -334,9 +334,9 @@ class VectorField(object):
             mesh.MakeGroupByIds('Faces_extruded' + str(self._applied_extrusions),FACE,new_face_ids)
             vol_group = mesh.MakeGroupByIds('Extrusion_Volume' + str(self._applied_extrusions),VOLUME,new_vol_ids)
         
-
+        bnd_faces = mesh.MakeBoundaryMesh(vol_group)
         if edge_groups:
-            bnd_faces = mesh.MakeBoundaryMesh(vol_group)
+            
             #bnd_faces = mesh.MakeGroupByIds("boundary_faces",FACE,bnd_faces)
             #bnd_nodes = bnd_faces.GetNodeIDs()
 
@@ -346,7 +346,7 @@ class VectorField(object):
                 #find faces belonging to new created edge groups
                 new_edge_group_faces = []
                 old_edges = edge_groups[i].GetIDs()
-                new_edges = new_edge_group.GetIDs()
+                new_edges = new_edge_groups[i]
                 for nr_edge in range(len(old_edges)):
                     
                     nodes_edge = mesh.GetElemNodes(old_edges[nr_edge])
