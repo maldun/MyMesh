@@ -166,13 +166,15 @@ class Quad4(FaceElement):
 class VectorField(object):
     """
     Class that represents a vector field which is applied on the nodes of 
-    mesh. Thus is holds also the information about the mesh, on which it works.
+    mesh. Thus is holds also the information about the mesh, on which it works,
+    nad on which group it may be restricted
     """
 
-    def __init__(self,mesh, scalar = 1.0):
+    def __init__(self,mesh, scalar = 1.0, restricted_group=None):
         
         self.mesh = mesh
         self.scalar = scalar
+        self.restricted_group = restricted_group
 
         self._applied_extrusions = 0
 
@@ -185,6 +187,10 @@ class VectorField(object):
     def getScalar(self): return self.scalar
 
     def setScalar(self,scalar): self.scalar = scalar
+
+    def getRestricedGroup(self): return self.restricted_group
+
+    def setRestricedGroup(self,restricted_group): self.restricted_group = restricted_group
     
     def scalarMultiplication(self,scalar):
         """
@@ -367,44 +373,46 @@ class VectorField(object):
             return face_group, vol_group, [], [], bnd_faces,lookup_table
 
 
-    # # def extrudeSurfaceTimes(self,k,group=None, edge_groups = []):
-    # #     """
-    # #     This method applies the vector field on a surface and creates
-    # #     a translated one over k steps.
+    def extrudeSurfaceTimes(self,k,group=None, edge_groups = []):
+        """
+        This method applies the vector field on a surface and creates
+        a translated one over k steps.
 
-    # #     Arguments:
-    # #     - `self`: 
-    # #     - `k`: number of extrusions, or list of extrusion thicknesses
-    # #     - `mesh`: Optional smesh.Mesh instance. Per defualt it is self.mesh
-    # #     - `group`: Optional group of elements on which we apply the vector field.
-    # #     - `table`: Variable if lookup table should be returned for further steps.
-    # #     """
-    # #     if isinstance(k,list):
-    # #         thicknesses = k
-    # #         k = len(k)
-    # #     else:
-    # #         thicknesses = []
+        Arguments:
+        - `self`: 
+        - `k`: number of extrusions, or list of extrusion thicknesses
+        - `mesh`: Optional smesh.Mesh instance. Per defualt it is self.mesh
+        - `group`: Optional group of elements on which we apply the vector field.
+        - `table`: Variable if lookup table should be returned for further steps.
+        """
+        if isinstance(k,list):
+            thicknesses = k
+            k = len(k)
+        else:
+            thicknesses = []
         
-    # #     face_groups = [None]*k
-    # #     vol_groups = [None]*k
-    # #     extruded_edge_groups = [None]*k
-    # #     extruded_edge_surface_groups = [None]*k
-    # #     bnd_face_groups = [None]*k
-    # #     lookup_tables = [None]*k
+        face_groups = [None]*k
+        vol_groups = [None]*k
+        extruded_edge_groups = [None]*k
+        extruded_edge_surface_groups = [None]*k
+        bnd_face_groups = [None]*k
+        lookup_tables = [None]*k
         
-    # #     face_groups[-1] = group
-    # #     extruded_edge_groups[-1] = edge_groups
+        face_groups[-1] = group
+        extruded_edge_groups[-1] = edge_groups
 
-    # #     for i in range(k):
-    # #         if thicknesses:
-    # #             self.setScalar(thicknesses[i])
+        original_rst_group = self.getRestricedGroup()
 
-    # #         face_groups[i], vol_groups[i], extruded_edge_groups[i], extruded_edge_surface_groups[i], bnd_face_groups[i], lookup_tables[i] = self.extrudeSurface(face_groups[i-1],extruded_edge_groups[i-1])
+        for i in range(k):
+            if thicknesses:
+                self.setScalar(thicknesses[i])
 
+            face_groups[i], vol_groups[i], extruded_edge_groups[i], extruded_edge_surface_groups[i], bnd_face_groups[i], lookup_tables[i] = self.extrudeSurface(face_groups[i-1],extruded_edge_groups[i-1])
+            self.setRestricedGroup(face_groups[i])
             
                 
-
-    #     return face_groups, vol_groups, extruded_edge_groups, extruded_edge_surface_groups, bnd_face_groups, lookup_tables
+        self.setRestricedGroup(original_rst_group)
+        return face_groups, vol_groups, extruded_edge_groups, extruded_edge_surface_groups, bnd_face_groups, lookup_tables
             
 
     def applyVectorFieldOnSurface(self,mesh=None,group=None):
@@ -491,6 +499,11 @@ class NormalVectorField(VectorField):
         Mesh = self.mesh
 
         elems = Mesh.GetNodeInverseElements(node_id)
+
+        rst_group = self.getRestricedGroup()
+        if rst_group is not None:
+            rst_group = rst_group.GetIDs()
+            elems = [elem for elem in elems if elem in rst_group]
 
         from Tools import apply_linear_elements
         elems = apply_linear_elements(Mesh,elems)
