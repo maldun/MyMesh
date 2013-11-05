@@ -89,6 +89,7 @@ class Tria3(FaceElement):
     def computeNormalOp(self):
         """
         Computes the normal of the triangle.
+        The returned vector is not normalized!
         This function only executes the computation
         """
 
@@ -100,7 +101,7 @@ class Tria3(FaceElement):
         vec1 = array(p1) - array(p0)
         vec2 = array(p2) - array(p0)
         vec_normal = cross(vec1, vec2)
-        return vec_normal/norm(vec_normal), norm(vec_normal)/2.0
+        return vec_normal, norm(vec_normal)
 
     def computeNormal(self,store = True):
         """
@@ -116,9 +117,9 @@ class Tria3(FaceElement):
         It stores the vector in the object per default.
         """
         if store:
-            self.area = self.computeNormalOp()[1]
+            self.area = self.computeNormalOp()[1]/2.0
         else:
-            return self.computeNormalOp()[1]
+            return self.computeNormalOp()[1]/2.0
 
         
 
@@ -130,6 +131,7 @@ class Quad4(FaceElement):
     def computeNormalOp(self):
         """
         Computes the normal of the triangle.
+        The returned vector is not normalized
         This function only executes the computation
         """
 
@@ -141,7 +143,7 @@ class Quad4(FaceElement):
         vec1 = array(p1) - array(p0)
         vec2 = array(p2) - array(p0)
         vec_normal = cross(vec1, vec2)
-        return vec_normal/norm(vec_normal), norm(vec_normal)
+        return vec_normal, norm(vec_normal)
 
     def computeNormal(self,store = True):
         """
@@ -478,7 +480,7 @@ class NormalVectorField(VectorField):
 
         math:: 
 
-            m(x) = (\sum_{\Delta \in Faces(x)} n_{\Delta}(x))/\#Faces(x)
+            m(x) = (\sum_{\Delta \in Faces(x)} ||n|| n_{\Delta}(x))/\#Faces(x)
             n(x) = m(x)/||m(x)||
         """
 
