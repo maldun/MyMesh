@@ -460,9 +460,9 @@ class NormalVectorField(VectorField):
     The current version only works on surfaces, and on
     linear elements. Hopefully this will change.
     """
-    def __init__(self,mesh):
+    def __init__(self,mesh,scalar = 1.0, restricted_group=None):
         
-        super(NormalVectorField,self).__init__(mesh)
+        super(NormalVectorField,self).__init__(mesh,scalar,restricted_group)
 
         # filter linear and triangle elements
         filter_linear_tri = GetFilter(FACE, FT_LinearOrQuadratic, Geom_TRIANGLE)
@@ -473,6 +473,16 @@ class NormalVectorField(VectorField):
 
         self.tria3 = [Tria3(mesh,id_tri) for id_tri in ids_tri]
         self.quad4 = [Tria3(mesh,id_tri) for id_tri in ids_tri]
+
+        if restricted_group is not None:
+            self.rst_group = set((self.getRestricedGroup()).GetIDs())
+        else:
+            self.rst_group = None
+
+    def setRestricedGroup(self,restricted_group):
+        self.restricted_group = restricted_group
+        if restricted_group is not None:
+            self.rst_group = set((self.getRestricedGroup()).GetIDs())
 
     def meanNormalFormula(self,elems):
         """
@@ -502,9 +512,8 @@ class NormalVectorField(VectorField):
 
         elems = Mesh.GetNodeInverseElements(node_id)
 
-        rst_group = self.getRestricedGroup()
+        rst_group = self.rst_group
         if rst_group is not None:
-            rst_group = rst_group.GetIDs()
             elems = [elem for elem in elems if elem in rst_group]
 
         from Tools import apply_linear_elements
