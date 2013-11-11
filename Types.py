@@ -68,11 +68,16 @@ class FaceElement(Element):
     def getNodes(self):
         return self.mesh.GetElemNodes(self.getIdNr())
 
-    def computeNormal(self,store = True):
+    def computeNormal(self,node,store = True):
+        """
+        Template method for normal computation.
+        If store is True, the normal will be stored
+        in a dict where the node is the key.
+        """
         raise NotImplementedError("Error: Not implemented!")
 
-    def getNormal(self):
-        return self.normal
+    def getNormal(self,node):
+        return self.normals[node]
         
     def computeArea(self,store = True):
         raise NotImplementedError("Error: Not implemented!")
@@ -86,11 +91,12 @@ class Tria3(FaceElement):
     Simple linear triangles with 3 corners
     """
     
-    def computeNormalOp(self):
+    def _computeNormalOp(self):
         """
         Computes the normal of the triangle.
         The returned vector is not normalized!
-        This function only executes the computation
+        This function only executes the computation.
+        The key value for node
         """
 
         nodes = self.getNodes()
@@ -103,23 +109,23 @@ class Tria3(FaceElement):
         vec_normal = cross(vec1, vec2)
         return vec_normal, norm(vec_normal)
 
-    def computeNormal(self,store = True):
+    def computeNormal(self,node,store = True):
         """
         It stores the vector in the object per default.
         """
         if store:
-            self.normal = self.computeNormalOp()[0]
+            self.normal = self._computeNormalOp()[0]
         else:
-            return self.computeNormalOp()[0]
+            return self._computeNormalOp()[0]
 
     def computeArea(self,store = True):
         """
         It stores the vector in the object per default.
         """
         if store:
-            self.area = self.computeNormalOp()[1]/2.0
+            self.area = self._computeNormalOp()[1]/2.0
         else:
-            return self.computeNormalOp()[1]/2.0
+            return self._computeNormalOp()[1]/2.0
 
         
 
@@ -128,7 +134,7 @@ class Quad4(FaceElement):
     Simple linear quadrangles with 4 corners
     """
     
-    def computeNormalOp(self):
+    def _computeNormalOp(self):
         """
         Computes the normal of the triangle.
         The returned vector is not normalized
@@ -145,23 +151,23 @@ class Quad4(FaceElement):
         vec_normal = cross(vec1, vec2)
         return vec_normal, norm(vec_normal)
 
-    def computeNormal(self,store = True):
+    def computeNormal(self,node,store = True):
         """
         It stores the vector in the object per default.
         """
         if store:
-            self.normal = self.computeNormalOp()[0]
+            self.normal = self._computeNormalOp()[0]
         else:
-            return self.computeNormalOp()[0]
+            return self._computeNormalOp()[0]
 
     def computeArea(self,store = True):
         """
         It stores the vector in the object per default.
         """
         if store:
-            self.area = self.computeNormalOp()[1]
+            self.area = self._computeNormalOp()[1]
         else:
-            return self.computeNormalOp()[1]
+            return self._computeNormalOp()[1]
 
 
 
@@ -484,7 +490,7 @@ class NormalVectorField(VectorField):
         if restricted_group is not None:
             self.rst_group = set((self.getRestricedGroup()).GetIDs())
 
-    def meanNormalFormula(self,elems):
+    def meanNormalFormula(self,elems,node_id):
         """
         Compute the mean normal, whith the formulas
 
@@ -497,7 +503,7 @@ class NormalVectorField(VectorField):
         result = zeros(3)
 
         for elem in elems:
-            result += elem.computeNormal(store=False)
+            result += elem.computeNormal(node_id,store=False)
 
         result /= len(elems)
         return result/norm(result)
@@ -519,7 +525,7 @@ class NormalVectorField(VectorField):
         from Tools import apply_linear_elements
         elems = apply_linear_elements(Mesh,elems)
         
-        return self.meanNormalFormula(elems)
+        return self.meanNormalFormula(elems,node_id)
 
         
         
