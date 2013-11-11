@@ -65,6 +65,10 @@ class FaceElement(Element):
     """
     Template class for faces
     """
+    def __init__(self,mesh,id_nr):
+        super(FaceElement,self).__init__(mesh,id_nr)
+        self.normals = {}
+
     def getNodes(self):
         return self.mesh.GetElemNodes(self.getIdNr())
 
@@ -75,6 +79,9 @@ class FaceElement(Element):
         in a dict where the node is the key.
         """
         raise NotImplementedError("Error: Not implemented!")
+
+    def getNormals(self):
+        return self.normals
 
     def getNormal(self,node):
         return self.normals[node]
@@ -114,7 +121,7 @@ class Tria3(FaceElement):
         It stores the vector in the object per default.
         """
         if store:
-            self.normal = self._computeNormalOp()[0]
+            self.normals[node] = self._computeNormalOp()[0]
         else:
             return self._computeNormalOp()[0]
 
@@ -156,7 +163,7 @@ class Quad4(FaceElement):
         It stores the vector in the object per default.
         """
         if store:
-            self.normal = self._computeNormalOp()[0]
+            self.normals[node] = self._computeNormalOp()[0]
         else:
             return self._computeNormalOp()[0]
 
