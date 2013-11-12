@@ -234,7 +234,7 @@ class VectorField(object):
         if mesh is None:
             mesh = self.mesh 
 
-        node_vec = self.mesh.GetNodeXYZ(node_id)
+        node_vec = array(self.mesh.GetNodeXYZ(node_id))
         translated_node_vec = node_vec + self.getVectorOnNode(node_id)
         new_node = mesh.AddNode(*translated_node_vec.tolist())
         
@@ -486,6 +486,10 @@ class NormalVectorField(VectorField):
 
         self.tria3 = [Tria3(mesh,id_tri) for id_tri in ids_tri]
         self.quad4 = [Tria3(mesh,id_tri) for id_tri in ids_tri]
+
+        if sum((len(self.tria3),len(self.quad4))) is 0:
+            raise NotImplementedError("Error: Type of element not implemented!")
+            
 
         if restricted_group is not None:
             self.rst_group = set((self.getRestricedGroup()).GetIDs())
