@@ -540,8 +540,40 @@ class NormalVectorField(VectorField):
 
         
         
+class MeanCurvatureNormal(VectorField):
+    """
+    Computes the mean curvature normal of a given mesh like
+    proposed in the paper 'discrete Differential-Geomety Operators for Triangulated 2-Manifolds'
+    by Meyer, Desbrun, Schroeder and Barr. 
+    """
+    
         
+    def __init__(self,mesh,scalar = 1.0, restricted_group=None):
         
-        
-        
+        super(NormalVectorField,self).__init__(mesh,scalar,restricted_group)
+
+        # filter linear and triangle elements
+        filter_linear_tri = GetFilter(FACE, FT_LinearOrQuadratic, Geom_TRIANGLE)
+        filter_linear_quad = GetFilter(FACE, FT_LinearOrQuadratic, Geom_QUADRANGLE)
+
+        ids_tri = mesh.GetIdsFromFilter(filter_linear_tri)
+        ids_quad = mesh.GetIdsFromFilter(filter_linear_quad)
+
+        self.tria3 = [Tria3(mesh,id_tri) for id_tri in ids_tri]
+        self.quad4 = [Tria3(mesh,id_tri) for id_tri in ids_tri]
+
+        if sum((len(self.tria3),len(self.quad4))) is 0:
+            raise NotImplementedError("Error: Type of element not implemented!")
+            
+
+        if restricted_group is not None:
+            self.rst_group = set((self.getRestricedGroup()).GetIDs())
+        else:
+            self.rst_group = None
+
+    def setRestricedGroup(self,restricted_group):
+        self.restricted_group = restricted_group
+        if restricted_group is not None:
+            self.rst_group = set((self.getRestricedGroup()).GetIDs())
+    
     
