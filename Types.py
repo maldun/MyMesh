@@ -92,6 +92,9 @@ class FaceElement(Element):
     def getArea(self):
         return self.area
 
+    def getCurvatureVector(self,node):
+        raise NotImplementedError("Error: Not implemented!")
+
 
 class Tria3(FaceElement):
     """
@@ -519,6 +522,29 @@ class NormalVectorField(VectorField):
         result /= len(elems)
         return result/norm(result)
 
+
+    def meanNormalCurvatureFormula(self,elems,node_id):
+        """
+        Compute an averaged mean curvature normal
+        due to the formula
+
+        math::
+
+            \frac{1}{2} \sum_{j \in N_1(i)} (\cot \alpha_{ij} + \cot \beta_{ij})(x_j - x_i)
+
+        where x_j are the neighbouring nodes of x_i, and alpha_{ij}, beta_{ij} are the angles
+        oposite to the edge (x_i,x_j) supposing we have a triangle mesh. If quad elements appear
+        we cut the quadrngles in a half.
+        (see  'Discrete Differential-Geomety Operators for Triangulated 2-Manifolds'
+         by Meyer, Desbrun, Schroeder and Barr for more details) 
+        """
+
+        normal = zeros(3)
+        for elem in elems:
+            normal += elem.getCurvatureVector(node_id)
+
+        return normal
+    
     def computeVectorOnNode(self,node_id):
         """
         We compute the normal in one node,
@@ -540,40 +566,10 @@ class NormalVectorField(VectorField):
 
         
         
-class MeanCurvatureNormal(VectorField):
+class MeanCurvatureNormal(NormalVectorField):
     """
     Computes the mean curvature normal of a given mesh like
-    proposed in the paper 'discrete Differential-Geomety Operators for Triangulated 2-Manifolds'
+    proposed in the paper 'Discrete Differential-Geomety Operators for Triangulated 2-Manifolds'
     by Meyer, Desbrun, Schroeder and Barr. 
     """
-    
-        
-    def __init__(self,mesh,scalar = 1.0, restricted_group=None):
-        
-        super(NormalVectorField,self).__init__(mesh,scalar,restricted_group)
-
-        # filter linear and triangle elements
-        filter_linear_tri = GetFilter(FACE, FT_LinearOrQuadratic, Geom_TRIANGLE)
-        filter_linear_quad = GetFilter(FACE, FT_LinearOrQuadratic, Geom_QUADRANGLE)
-
-        ids_tri = mesh.GetIdsFromFilter(filter_linear_tri)
-        ids_quad = mesh.GetIdsFromFilter(filter_linear_quad)
-
-        self.tria3 = [Tria3(mesh,id_tri) for id_tri in ids_tri]
-        self.quad4 = [Tria3(mesh,id_tri) for id_tri in ids_tri]
-
-        if sum((len(self.tria3),len(self.quad4))) is 0:
-            raise NotImplementedError("Error: Type of element not implemented!")
-            
-
-        if restricted_group is not None:
-            self.rst_group = set((self.getRestricedGroup()).GetIDs())
-        else:
-            self.rst_group = None
-
-    def setRestricedGroup(self,restricted_group):
-        self.restricted_group = restricted_group
-        if restricted_group is not None:
-            self.rst_group = set((self.getRestricedGroup()).GetIDs())
-    
-    
+    pass
