@@ -28,8 +28,9 @@ import SMESH
 from smesh import GetFilter, EDGE, FACE, VOLUME, FT_LinearOrQuadratic, Geom_TRIANGLE, Geom_QUADRANGLE
 
 from numpy import array, ndarray, arange, cross, zeros
-from numpy.linalg import norm
+from numpy.linalg import norm, inner
 from numpy import float64 as data_type
+from numpy import arccos, tan
 
 class Element(object):
     """
@@ -137,6 +138,33 @@ class Tria3(FaceElement):
         else:
             return self._computeNormalOp()[1]/2.0
 
+    def getCurvatureVector(self,node):
+        """
+        Computes the vector required for the mean curvature normal formula.
+        in a triangle. There are the following formuli: (x_i is node; x_j, x_{j+1} are
+        the other nodes))
+
+        \cos(\alpha_{ij}) = < x_i - x_{j+1}, x_j - x_{j+1}>/norms
+        \cos(\beta_{ij+1}) = < x_i - x_j, x_{j+1} - x_j>/norms
+
+        return \cot(\alpha_{ij})(x_i - x_j) + \cot(\beta_{ij+1}) (x_i - x_{j+1})
+        """
+        nodes = self.getNodes()
+        index_node = nodes.index(node)
+
+        x_i = array(self.mesh.GetNodeXYZ(node))
+        x_j = array(self.mesh.GetNodeXYZ(nodes(index_node-1)))
+        x_jp = array(self.mesh.GetNodeXYZ(nodes(index_node-2)))
+
+        l1 = x_i - x_j
+        l2 = x_i - x_jp
+        l3 = x_j-x_jp
+        
+        w1 = arccos(inner(l1,-l3)/(norm(l1)*norm(l3)))
+        w2 = arccos(inner(l2,l3)/(norm(l2)*norm(l3)))
+
+        return (1/tan(w1))*l2 + (1/tan(w2))*l1
+        
         
 
 class Quad4(FaceElement):
