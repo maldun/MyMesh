@@ -27,8 +27,8 @@ import SMESH
 
 from smesh import GetFilter, EDGE, FACE, VOLUME, FT_LinearOrQuadratic, Geom_TRIANGLE, Geom_QUADRANGLE
 
-from numpy import array, ndarray, arange, cross, zeros
-from numpy.linalg import norm, inner
+from numpy import array, ndarray, arange, cross, zeros, inner
+from numpy.linalg import norm
 from numpy import float64 as data_type
 from numpy import arccos, tan
 
@@ -153,8 +153,8 @@ class Tria3(FaceElement):
         index_node = nodes.index(node)
 
         x_i = array(self.mesh.GetNodeXYZ(node))
-        x_j = array(self.mesh.GetNodeXYZ(nodes(index_node-1)))
-        x_jp = array(self.mesh.GetNodeXYZ(nodes(index_node-2)))
+        x_j = array(self.mesh.GetNodeXYZ(nodes[index_node-1]))
+        x_jp = array(self.mesh.GetNodeXYZ(nodes[index_node-2]))
 
         l1 = x_i - x_j
         l2 = x_i - x_jp
