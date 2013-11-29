@@ -196,6 +196,7 @@ class Quad4(FaceElement):
         if store:
             self.normals[node] = self._computeNormalOp()[0]
         else:
+
             return self._computeNormalOp()[0]
 
     def computeArea(self,store = True):
@@ -206,6 +207,42 @@ class Quad4(FaceElement):
             self.area = self._computeNormalOp()[1]
         else:
             return self._computeNormalOp()[1]
+
+    def getCurvatureVector(self,node):
+        """
+        Computes the vector required for the mean curvature normal formula.
+        in a quadrangle. There are the following formuli: (x_i is node; x_j, x_{j+1} and x_{j+2} 
+        are the other nodes). We interprete the quadrangle as a halfed triangle to derive the 
+        formulas)
+        x_i    x_{j+2}
+           +---+
+           |\  |
+           | \ |
+           |  \| 
+           +---+
+        x_j     x_{j+1}
+        """
+        nodes = self.getNodes()
+        index_node = nodes.index(node)
+
+        x_i = array(self.mesh.GetNodeXYZ(node))
+        x_j = array(self.mesh.GetNodeXYZ(nodes[index_node-1]))
+        x_jp = array(self.mesh.GetNodeXYZ(nodes[index_node-2]))
+        x_jp2 = array(self.mesh.GetNodeXYZ(nodes[index_node-3]))
+
+        l1 = x_i - x_j
+        l2 = x_i - x_jp
+        l3 = x_i - x_jp2
+        l4 = x_j-x_jp
+        l5 = x_jp2 - x_jp 
+        
+        w1 = arccos(inner(l1,-l4)/(norm(l1)*norm(l4)))
+        w2 = arccos(inner(l2,l4)/(norm(l2)*norm(l4)))
+        w3 = arccos(inner(l2,l5)/(norm(l2)*norm(l5)))
+        w4 = arccos(inner(l3,-l5)/(norm(l3)*norm(l5)))
+
+        return ((1/tan(w1))+ (1/tan(w4)))*l2 + (1/tan(w2))*l1 + (1/tan(w3))*l3  
+
 
 
 
