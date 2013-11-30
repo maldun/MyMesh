@@ -101,7 +101,7 @@ class FaceElement(Element):
     def getArea(self):
         return self.area
 
-    def getCurvatureVector(self,node,Voroni=False):
+    def getCurvatureVector(self,node,voroni=False):
         raise NotImplementedError("Error: Not implemented!")
 
 
@@ -155,7 +155,7 @@ class Tria3(FaceElement):
         from Tools import compute_voroni_area_of_triangle
         return compute_voroni_area_of_triangle(w1,w2,l1,l2)
         
-    def computeCurvatureVector(self,node,Voroni=False):
+    def computeCurvatureVector(self,node,voroni=False):
         """
         Computes the vector required for the mean curvature normal formula.
         in a triangle. There are the following formuli: (x_i is node; x_j, x_{j+1} are
@@ -192,7 +192,7 @@ class Tria3(FaceElement):
         w1 = arccos(inner(l1,-l3)/(norm(l1)*norm(l3)))
         w2 = arccos(inner(l2,l3)/(norm(l2)*norm(l3)))
         
-        if Voroni:
+        if voroni:
             return (1/tan(w1))*l2 + (1/tan(w2))*l1, self._computeVoroniArea(w1,w2,l1,l2)
         
         return (1/tan(w1))*l2 + (1/tan(w2))*l1
@@ -250,7 +250,7 @@ class Quad4(FaceElement):
         voroni_area += compute_voroni_area_of_triangle(w3,w4,l2,l3)
         return voroni_area
         
-    def computeCurvatureVector(self,node,Voroni=False):
+    def computeCurvatureVector(self,node,voroni=False):
         """
         Computes the vector required for the mean curvature normal formula.
         in a quadrangle. There are the following formuli: (x_i is node; x_j, x_{j+1} and x_{j+2} 
@@ -287,7 +287,7 @@ class Quad4(FaceElement):
         w3 = arccos(inner(l2,l5)/(norm(l2)*norm(l5)))
         w4 = arccos(inner(l3,-l5)/(norm(l3)*norm(l5)))
 
-        if Voroni:
+        if voroni:
             return ((1/tan(w1))+ (1/tan(w4)))*l2 + (1/tan(w2))*l1 + (1/tan(w3))*l3,\
               self._computeVoroniArea(w1,w2,w3,w4,l1,l2,l3)
 
@@ -638,7 +638,7 @@ class NormalVectorField(VectorField):
         return result/norm(result)
 
 
-    def meanCurvatureNormalFormula(self,elems,node_id):
+    def meanCurvatureNormalFormula(self,elems,node_id,voroni=False):
         """
         Compute an averaged mean curvature normal
         due to the formula
@@ -654,10 +654,22 @@ class NormalVectorField(VectorField):
         """
 
         normal = zeros(3)
-        for elem in elems:
-            normal += elem.computeCurvatureVector(node_id)
+        if voroni is False:
+            for elem in elems:
+                normal += elem.computeCurvatureVector(node_id)
 
+        else:
+            voroni_area = 0
+            for elem in elems:
+                vec, area = elem.computeCurvatureVector(node_id,voroni=True)
+                normal += vec
+                voroni_area += area 
+
+            normal *= 1.0/(2*voroni_area)
+
+                
         return normal
+        
     
     def computeVectorOnNode(self,node_id):
         """
@@ -702,5 +714,5 @@ class MeanCurvatureNormal(NormalVectorField):
         from Tools import apply_linear_elements
         elems = apply_linear_elements(Mesh,elems)
         
-        return self.meanCurvatureNormalFormula(elems,node_id)
+        return self.meanCurvatureNormalFormula(elems,node_id,voroni=True)
 
