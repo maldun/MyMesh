@@ -255,7 +255,9 @@ class Quad4(FaceElement):
         Computes the vector required for the mean curvature normal formula.
         in a quadrangle. There are the following formuli: (x_i is node; x_j, x_{j+1} and x_{j+2} 
         are the other nodes). We interprete the quadrangle as a halfed triangle to derive the 
-        formulas)
+        formulas. In order to avoid obtuse triangles we distinguish between 2 cases. If 
+        the angle in x_i is larger than the angles in the other 2 corners we split the quadrangle 
+        this way:
         x_i    l3  x_{j+2}
            +-------+
            |\    w4|
@@ -267,6 +269,21 @@ class Quad4(FaceElement):
            |w1  w2\|
            +-------+
         x_j    l4  x_{j+1}
+
+        Else we forget about the lower half and split this way:
+        x_i    l3  x_{j+2}
+           +-------+
+           |    v2/:
+           |     / :
+           |  l6/  :
+         l1|   /   :l5
+           |v1/    :
+           | /     :
+           |/      :
+           +.......+
+        x_j    l4  x_{j+1}
+
+        
         """
         nodes = self.getNodes()
         index_node = nodes.index(node)
@@ -287,13 +304,26 @@ class Quad4(FaceElement):
         w3 = arccos(inner(l2,l5)/(norm(l2)*norm(l5)))
         w4 = arccos(inner(l3,-l5)/(norm(l3)*norm(l5)))
 
-        if voroni:
-            return ((1/tan(w1))+ (1/tan(w4)))*l2 + (1/tan(w2))*l1 + (1/tan(w3))*l3,\
-              self._computeVoroniArea(w1,w2,w3,w4,l1,l2,l3)
+        # first case: 
+        if (w2 + w3) > pi/2.0 or (w1+w2+w3+w4) < 3.0*pi/2.0:
 
-        return ((1/tan(w1))+ (1/tan(w4)))*l2 + (1/tan(w2))*l1 + (1/tan(w3))*l3  
+            if voroni:
+                return ((1/tan(w1))+ (1/tan(w4)))*l2 + (1/tan(w2))*l1 + (1/tan(w3))*l3,\
+                  self._computeVoroniArea(w1,w2,w3,w4,l1,l2,l3)
 
+            return ((1/tan(w1))+ (1/tan(w4)))*l2 + (1/tan(w2))*l1 + (1/tan(w3))*l3  
+        # second case
+        else:
+            l6 = x_jp2 - x_j
+            v1 = arccos(inner(l1,l6)/(norm(l1)*norm(l6)))
+            v2 = arccos(inner(l3,-l6)/(norm(l3)*norm(l6)))
 
+            if voroni:
+                from Tools import compute_voroni_area_of_triangle
+                return (1/tan(v1))*l3 + (1/tan(v2))*l1,\
+                  compute_voroni_area_of_triangle(v1,v2,l1,l3)
+            
+            return (1/tan(v1))*l3 + (1/tan(v2))*l1
 
 
 class VectorField(object):
