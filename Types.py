@@ -291,7 +291,7 @@ class VectorField(object):
         """
         Apply the vector field on a given node. This method creates the
         displaced node in the given mesh, and returns the index of the new node.
-        The node is created in the current mesh per defualt, but it is possible 
+        The node is created in the current mesh per default, but it is possible 
         to add it to a different mesh.
 
         Arguments:
@@ -588,7 +588,7 @@ class NormalVectorField(VectorField):
         return result/norm(result)
 
 
-    def meanNormalCurvatureFormula(self,elems,node_id):
+    def meanCurvatureNormalFormula(self,elems,node_id):
         """
         Compute an averaged mean curvature normal
         due to the formula
@@ -637,4 +637,22 @@ class MeanCurvatureNormal(NormalVectorField):
     proposed in the paper 'Discrete Differential-Geomety Operators for Triangulated 2-Manifolds'
     by Meyer, Desbrun, Schroeder and Barr. 
     """
-    pass
+    def computeVectorOnNode(self,node_id):
+        """
+        We compute the normal in one node,
+        with help of the mean curvature formula
+        formula.
+        """
+        Mesh = self.mesh
+
+        elems = Mesh.GetNodeInverseElements(node_id)
+
+        rst_group = self.rst_group
+        if rst_group is not None:
+            elems = [elem for elem in elems if elem in rst_group]
+
+        from Tools import apply_linear_elements
+        elems = apply_linear_elements(Mesh,elems)
+        
+        return self.meanCurvatureNormalFormula(elems,node_id)
+
