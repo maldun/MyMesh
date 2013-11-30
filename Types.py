@@ -705,8 +705,9 @@ class NormalVectorField(VectorField):
     def computeVectorOnNode(self,node_id):
         """
         We compute the normal in one node,
-        (currently) with help of the mean value
-        formula.
+        with help of the mean curvature normal formula.
+        If the curvature is too small we apply the 
+        mean normal formula.
         """
         Mesh = self.mesh
 
@@ -718,6 +719,10 @@ class NormalVectorField(VectorField):
 
         from Tools import apply_linear_elements
         elems = apply_linear_elements(Mesh,elems)
+
+        result = self.meanCurvatureNormalFormula(elems,node_id)
+        if norm(result) >= 1e-2:
+            return result/norm(result)
         
         return self.meanNormalFormula(elems,node_id)
 
