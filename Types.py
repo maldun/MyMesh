@@ -283,7 +283,8 @@ class Quad4(FaceElement):
            +.......+
         x_j    l4  x_{j+1}
 
-        
+        This handling is mathematically correct, since we could view it as a local mesh 
+        refinement in order to get a better approximation in a certain area.
         """
         nodes = self.getNodes()
         index_node = nodes.index(node)
