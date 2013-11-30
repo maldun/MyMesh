@@ -17,6 +17,13 @@
 # License along with this library; if not, write to the Free Software
 # Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301  USA
 
+"""
+REFERENCES:
+
+-    [1] 'Discrete Differential-Geomety Operators for Triangulated 2-Manifolds'
+          by Meyer, Desbrun, Schroeder and Barr. (2002) Visualization and mathematics, 3(2), 52-58.
+"""
+
 from __future__ import print_function
 
 import salome
@@ -138,11 +145,17 @@ class Tria3(FaceElement):
         else:
             return self._computeNormalOp()[1]/2.0
 
-    def getCurvatureVector(self,node):
+    def setVoroni(self,w1,w2,l1,l2):
+        """
+        computes the part of the triangle for the Voroni area
+        descriped in [1]
+        """
+        
+    def getCurvatureVector(self,node,Voroni=False):
         """
         Computes the vector required for the mean curvature normal formula.
         in a triangle. There are the following formuli: (x_i is node; x_j, x_{j+1} are
-        the other nodes))
+        the other nodes)). We use the description in [1].
 
         \cos(\alpha_{ij}) = < x_i - x_{j+1}, x_j - x_{j+1}>/norms
         \cos(\beta_{ij+1}) = < x_i - x_j, x_{j+1} - x_j>/norms
@@ -163,6 +176,11 @@ class Tria3(FaceElement):
         w1 = arccos(inner(l1,-l3)/(norm(l1)*norm(l3)))
         w2 = arccos(inner(l2,l3)/(norm(l2)*norm(l3)))
 
+        vector = (1/tan(w1))*l2 + (1/tan(w2))*l1
+        
+        if Voroni:
+            self.setVoroni(w1,w2,l1,l2)
+        
         return (1/tan(w1))*l2 + (1/tan(w2))*l1
         
         
@@ -600,8 +618,7 @@ class NormalVectorField(VectorField):
         where x_j are the neighbouring nodes of x_i, and alpha_{ij}, beta_{ij} are the angles
         oposite to the edge (x_i,x_j) supposing we have a triangle mesh. If quad elements appear
         we cut the quadrngles in a half.
-        (see  'Discrete Differential-Geomety Operators for Triangulated 2-Manifolds'
-         by Meyer, Desbrun, Schroeder and Barr for more details) 
+        (see [1] for more details) 
         """
 
         normal = zeros(3)
@@ -634,8 +651,7 @@ class NormalVectorField(VectorField):
 class MeanCurvatureNormal(NormalVectorField):
     """
     Computes the mean curvature normal of a given mesh like
-    proposed in the paper 'Discrete Differential-Geomety Operators for Triangulated 2-Manifolds'
-    by Meyer, Desbrun, Schroeder and Barr. 
+    proposed in [1].
     """
     def computeVectorOnNode(self,node_id):
         """
