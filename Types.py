@@ -104,6 +104,8 @@ class FaceElement(Element):
     def getCurvatureVector(self,node,Voroni=False):
         raise NotImplementedError("Error: Not implemented!")
 
+
+    
 class Tria3(FaceElement):
     """
     Simple linear triangles with 3 corners
@@ -150,20 +152,10 @@ class Tria3(FaceElement):
         computes the part of the triangle for the Voroni area
         descriped in [1]
         """
-        # Check if triangle is obtuse in x_i
-        if w1+w2 < pi/2.0:
-            # Then get Area(T)/2
-            return norm(cross(l1,l2))/4.0
-
-        if w1 > pi/2.0 or w2 > pi/2:
-            # Then get Area(T)/4
-            return norm(cross(l1,l2))/8.0
-            
-
-        #Else use formula on page 9 in [1]
-        return ((1/tan(w1))*inner(l2,l2) + (1/tan(w2))*inner(l1,l1))/8.0
+        from Tools import compute_voroni_area_of_triangle
+        return compute_voroni_area_of_triangle(w1,w2,l1,l2)
         
-    def getCurvatureVector(self,node,Voroni=False):
+    def computeCurvatureVector(self,node,Voroni=False):
         """
         Computes the vector required for the mean curvature normal formula.
         in a triangle. There are the following formuli: (x_i is node; x_j, x_{j+1} are
@@ -173,6 +165,18 @@ class Tria3(FaceElement):
         \cos(\beta_{ij+1}) = < x_i - x_j, x_{j+1} - x_j>/norms
 
         return \cot(\alpha_{ij})(x_i - x_j) + \cot(\beta_{ij+1}) (x_i - x_{j+1})
+
+        x_i
+          +
+          |\
+          | \
+          |  \
+        l1|   \l2
+          |    \
+          |     \
+          |w1  w2\
+          +-------+
+        x_j  l3  x_{j+1}
         """
         nodes = self.getNodes()
         index_node = nodes.index(node)
@@ -236,19 +240,33 @@ class Quad4(FaceElement):
         else:
             return self._computeNormalOp()[1]
 
-    def getCurvatureVector(self,node):
+    def _computeVoroniArea(self,w1,w2,w3,w4,l1,l2,l3):
+        """
+        Computes the the Voroni area of the quadrangle by splitting it into two
+        triangles like described in the computeCurvatureVector method.
+        """
+        from Tools import compute_voroni_area_of_triangle
+        voroni_area = compute_voroni_area_of_triangle(w1,w2,l1,l2)
+        voroni_area += compute_voroni_area_of_triangle(w3,w4,l2,l3)
+        return voroni_area
+        
+    def computeCurvatureVector(self,node,Voroni=False):
         """
         Computes the vector required for the mean curvature normal formula.
         in a quadrangle. There are the following formuli: (x_i is node; x_j, x_{j+1} and x_{j+2} 
         are the other nodes). We interprete the quadrangle as a halfed triangle to derive the 
         formulas)
-        x_i    x_{j+2}
-           +---+
-           |\  |
-           | \ |
-           |  \| 
-           +---+
-        x_j     x_{j+1}
+        x_i    l3  x_{j+2}
+           +-------+
+           |\    w4|
+           | \     |
+           |  \l2  |
+         l1|   \   |l5
+           |    \w3|
+           |     \ |
+           |w1  w2\|
+           +-------+
+        x_j    l4  x_{j+1}
         """
         nodes = self.getNodes()
         index_node = nodes.index(node)
@@ -268,6 +286,10 @@ class Quad4(FaceElement):
         w2 = arccos(inner(l2,l4)/(norm(l2)*norm(l4)))
         w3 = arccos(inner(l2,l5)/(norm(l2)*norm(l5)))
         w4 = arccos(inner(l3,-l5)/(norm(l3)*norm(l5)))
+
+        if Voroni:
+            return ((1/tan(w1))+ (1/tan(w4)))*l2 + (1/tan(w2))*l1 + (1/tan(w3))*l3,\
+              self._computeVoroniArea(w1,w2,w3,w4,l1,l2,l3)
 
         return ((1/tan(w1))+ (1/tan(w4)))*l2 + (1/tan(w2))*l1 + (1/tan(w3))*l3  
 
@@ -633,7 +655,7 @@ class NormalVectorField(VectorField):
 
         normal = zeros(3)
         for elem in elems:
-            normal += elem.getCurvatureVector(node_id)
+            normal += elem.computeCurvatureVector(node_id)
 
         return normal
     

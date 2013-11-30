@@ -28,8 +28,10 @@ import SMESH
 from smesh import GetFilter, EDGE, FACE, VOLUME, FT_LinearOrQuadratic, Geom_TRIANGLE, Geom_QUADRANGLE
 from SMESH import Entity_Triangle, Entity_Quadrangle
 
-from numpy import array, ndarray, arange
+from numpy import array, ndarray, arange, cross, inner
+from numpy.linalg import norm
 from numpy import float64 as data_type
+from numpy import arccos, tan, pi
 
 from Types import Element, Tria3, Quad4
 
@@ -53,3 +55,34 @@ def apply_linear_elements(mesh,elem_ids):
             elem_list += [Quad4(mesh,elem)]
 
     return elem_list
+
+def compute_voroni_area_of_triangle(w1,w2,l1,l2):
+    """
+    computes the part of the triangle for the Voroni area
+    descriped in [1]
+
+            x_i
+          +
+          |\
+          | \
+          |  \
+        l1|   \l2
+          |    \
+          |     \
+          |w1  w2\
+          +-------+
+        x_j  l3  x_{j+1}
+
+    """
+    # Check if triangle is obtuse in x_i
+    if w1+w2 < pi/2.0:
+        # Then get Area(T)/2
+        return norm(cross(l1,l2))/4.0
+    
+    if w1 > pi/2.0 or w2 > pi/2:
+        # Then get Area(T)/4
+        return norm(cross(l1,l2))/8.0
+            
+
+    #Else use formula on page 9 in [1]
+    return ((1/tan(w1))*inner(l2,l2) + (1/tan(w2))*inner(l1,l1))/8.0
