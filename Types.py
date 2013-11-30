@@ -622,7 +622,7 @@ class NormalVectorField(VectorField):
     The current version only works on surfaces, and on
     linear elements. Hopefully this will change.
     """
-    def __init__(self,mesh,scalar = 1.0, restricted_group=None):
+    def __init__(self,mesh,scalar = 1.0, restricted_group=None,fast = False):
         
         super(NormalVectorField,self).__init__(mesh,scalar,restricted_group)
 
@@ -638,13 +638,24 @@ class NormalVectorField(VectorField):
 
         if sum((len(self.tria3),len(self.quad4))) is 0:
             raise NotImplementedError("Error: Type of element not implemented!")
-            
 
+        self.fast = fast
+        
+        if not fast:
+            bound_filter = smesh.GetFilter(SMESH.EDGE, SMESH.FT_FreeBorders)
+            bound_ids = mesh.GetIdsFromFilter(bound_filter)
+            bound_nodes = [mesh.GetElemNodes(edge)[0] for edge in bound_ids]
+            bound_nodes += [mesh.GetElemNodes(edge)[1] for edge in bound_ids]
+
+            self.bound_nodes = set(bound_nodes)
+        
         if restricted_group is not None:
             self.rst_group = set((self.getRestricedGroup()).GetIDs())
         else:
             self.rst_group = None
 
+    def switchComputationMode(self): self.fast = not self.fast
+            
     def setRestricedGroup(self,restricted_group):
         self.restricted_group = restricted_group
         if restricted_group is not None:
@@ -720,9 +731,11 @@ class NormalVectorField(VectorField):
         from Tools import apply_linear_elements
         elems = apply_linear_elements(Mesh,elems)
 
-        result = self.meanCurvatureNormalFormula(elems,node_id)
-        if norm(result) >= 1e-2:
-            return result/norm(result)
+        if not self.fast:
+            if not node_id in self.bound_nodes:
+                result = self.meanCurvatureNormalFormula(elems,node_id)
+                if norm(result) >= 1e-2:
+                    return result/norm(result)
         
         return self.meanNormalFormula(elems,node_id)
 
