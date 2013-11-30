@@ -37,7 +37,7 @@ from smesh import GetFilter, EDGE, FACE, VOLUME, FT_LinearOrQuadratic, Geom_TRIA
 from numpy import array, ndarray, arange, cross, zeros, inner
 from numpy.linalg import norm
 from numpy import float64 as data_type
-from numpy import arccos, tan
+from numpy import arccos, tan, pi
 
 class Element(object):
     """
@@ -76,6 +76,7 @@ class FaceElement(Element):
     def __init__(self,mesh,id_nr):
         super(FaceElement,self).__init__(mesh,id_nr)
         self.normals = {}
+        self.voroni_area = None 
 
     def getNodes(self):
         return self.mesh.GetElemNodes(self.getIdNr())
@@ -100,9 +101,8 @@ class FaceElement(Element):
     def getArea(self):
         return self.area
 
-    def getCurvatureVector(self,node):
+    def getCurvatureVector(self,node,Voroni=False):
         raise NotImplementedError("Error: Not implemented!")
-
 
 class Tria3(FaceElement):
     """
@@ -145,11 +145,23 @@ class Tria3(FaceElement):
         else:
             return self._computeNormalOp()[1]/2.0
 
-    def setVoroni(self,w1,w2,l1,l2):
+    def _computeVoroniArea(self,w1,w2,l1,l2):
         """
         computes the part of the triangle for the Voroni area
         descriped in [1]
         """
+        # Check if triangle is obtuse in x_i
+        if w1+w2 < pi/2.0:
+            # Then get Area(T)/2
+            return norm(cross(l1,l2))/4.0
+
+        if w1 > pi/2.0 or w2 > pi/2:
+            # Then get Area(T)/4
+            return norm(cross(l1,l2))/8.0
+            
+
+        #Else use formula on page 9 in [1]
+        return ((1/tan(w1))*inner(l2,l2) + (1/tan(w2))*inner(l1,l1))/8.0
         
     def getCurvatureVector(self,node,Voroni=False):
         """
@@ -175,11 +187,9 @@ class Tria3(FaceElement):
         
         w1 = arccos(inner(l1,-l3)/(norm(l1)*norm(l3)))
         w2 = arccos(inner(l2,l3)/(norm(l2)*norm(l3)))
-
-        vector = (1/tan(w1))*l2 + (1/tan(w2))*l1
         
         if Voroni:
-            self.setVoroni(w1,w2,l1,l2)
+            return (1/tan(w1))*l2 + (1/tan(w2))*l1, self._computeVoroniArea(w1,w2,l1,l2)
         
         return (1/tan(w1))*l2 + (1/tan(w2))*l1
         
