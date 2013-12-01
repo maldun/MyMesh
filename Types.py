@@ -368,6 +368,13 @@ class VectorField(object):
         self.scalarMultiplication(scalar)
         return self
 
+    def updateNode(self,node_id,new_node): 
+        """
+        Applies necessary update operations.
+        """
+        pass
+
+    
     def applyVectorOnNode(self,node_id, mesh = None):
         """
         Apply the vector field on a given node. This method creates the
@@ -386,6 +393,8 @@ class VectorField(object):
         node_vec = array(self.mesh.GetNodeXYZ(node_id))
         translated_node_vec = node_vec + self.getVectorOnNode(node_id)
         new_node = mesh.AddNode(*translated_node_vec.tolist())
+
+        self.updateNode(node_id,new_node)
         
         return new_node
 
@@ -661,6 +670,13 @@ class NormalVectorField(VectorField):
         if restricted_group is not None:
             self.rst_group = set((self.getRestricedGroup()).GetIDs())
 
+    def updateNode(self,node_id,new_node):
+        """
+        Check if the original node belongs to the boundary. If yes
+        add the new node to this group.
+        """
+        self.bound_nodes.add(new_node) 
+            
     def meanNormalFormula(self,elems,node_id):
         """
         Compute the mean normal, whith the formulas
