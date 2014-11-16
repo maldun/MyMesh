@@ -427,7 +427,7 @@ class VectorField(object):
         return new_face, new_nodes
         
 
-    def computeSurfaceExtrusion(self,group=None, edge_groups = []):
+    def computeSurfaceExtrusion(self,group=None, edge_groups = [], face_groups = []):
         """
         This method applies the vector field on a surface and creates
         a translated one. This method makes the computation only.
@@ -451,6 +451,7 @@ class VectorField(object):
         lookup_table = {}
         new_face_ids = []
         new_vol_ids = []
+
         for face in faces:
 
             face_id, new_nodes = self.applyVectorFieldOnFace(face,mesh,lookup_table)
@@ -478,13 +479,25 @@ class VectorField(object):
                 new_edge_groups += [new_edges]
                 edge_groups_faces += [edge_group_faces]
             
+        if face_groups:
+            new_face_groups = []
+
+            for face_group in face_groups:
+                face_group_ids = face_group.GetIDs()
+            
+                new_ids = [new_face_ids[position] for position in xrange(len(faces)) if faces[position] in face_group_ids]
+                new_face_groups += [new_ids]
+        
+        if edge_groups and not face_groups:
             return new_face_ids, new_vol_ids, new_edge_groups, lookup_table
-        
-        #else:
-        
-        return new_face_ids, new_vol_ids, lookup_table
+        elif not edge_groups and face_groups:
+            return new_face_ids, new_vol_ids, new_face_groups, lookup_table
+        elif edge_groups and face_groups:
+            return new_face_ids, new_vol_ids, new_edge_groups, new_face_groups, lookup_table
+        else:
+            return new_face_ids, new_vol_ids, lookup_table
     
-    def extrudeSurface(self,group=None, edge_groups = [], create_boundary_elements = True):
+    def extrudeSurface(self,group=None, edge_groups = [], face_groups = [], create_boundary_elements = True):
         """
         This method applies the vector field on a surface and creates
         a translated one. 
@@ -500,9 +513,12 @@ class VectorField(object):
 
         self._applied_extrusions += 1 
 
-        if edge_groups:
+        if edge_groups and not face_groups:
             new_face_ids, new_vol_ids, new_edge_groups, lookup_table = self.computeSurfaceExtrusion(group=group, edge_groups = edge_groups)
-        
+        elif not edge_groups and face_groups:
+            new_face_ids, new_vol_ids, new_face_groups, lookup_table = self.computeSurfaceExtrusion(group=group, face_groups = face_groups)
+        elif edge_groups and face_groups:
+            new_face_ids, new_vol_ids, new_edge_groups, new_face_groups, lookup_table = self.computeSurfaceExtrusion(group=group, edge_groups = edge_groups, face_groups = face_groups)
         else:
             new_face_ids, new_vol_ids, lookup_table = self.computeSurfaceExtrusion(group=group, edge_groups = edge_groups)
         # add face and volume group    
@@ -538,15 +554,26 @@ class VectorField(object):
                     
                     new_salome_edge_face_groups += [mesh.MakeGroupByIds(edge_groups[i].GetName()+'_extruded_faces' + str(self._applied_extrusions),FACE,new_edge_group_faces)]
 
-            salome.sg.updateObjBrowser(0)
-            return face_group, vol_group, new_salome_edge_groups, new_salome_edge_face_groups, bnd_faces, lookup_table 
+        if face_groups:
+            new_salome_face_groups = []
+            for i in range(len(face_groups)):
+                new_salome_face_groups += [mesh.MakeGroupByIds(face_groups[i].GetName()+'_extruded' + str(self._applied_extrusions),FACE,new_face_groups[i])]
 
+        if edge_groups and not face_groups:
+            salome.sg.updateObjBrowser(0)
+            return face_group, vol_group, new_salome_edge_groups, new_salome_edge_face_groups, [], bnd_faces, lookup_table 
+        elif not edge_groups and face_groups:
+            salome.sg.updateObjBrowser(0)
+            return face_group, vol_group, [], [], new_salome_face_groups, bnd_faces, lookup_table
+        elif edge_groups and face_groups:
+            salome.sg.updateObjBrowser(0)
+            return face_group, vol_group, new_salome_edge_groups, new_salome_edge_face_groups, new_salome_face_groups, bnd_faces, lookup_table
         else:
             salome.sg.updateObjBrowser(0)
-            return face_group, vol_group, [], [], bnd_faces,lookup_table
+            return face_group, vol_group, [], [], [], bnd_faces,lookup_table
 
 
-    def extrudeSurfaceTimes(self,k,group=None, edge_groups = []):
+    def extrudeSurfaceTimes(self,k,group=None, edge_groups = [], face_groups = []):
         """
         This method applies the vector field on a surface and creates
         a translated one over k steps.
@@ -564,15 +591,17 @@ class VectorField(object):
         else:
             thicknesses = []
         
-        face_groups = [None]*k
+        face_groups_rest = [None]*k
+        extruded_face_groups = [None]*k
         vol_groups = [None]*k
         extruded_edge_groups = [None]*k
         extruded_edge_surface_groups = [None]*k
         bnd_face_groups = [None]*k
         lookup_tables = [None]*k
         
-        face_groups[-1] = group
+        face_groups_rest[-1] = group
         extruded_edge_groups[-1] = edge_groups
+        extruded_face_groups[-1] = face_groups
 
         original_rst_group = self.getRestricedGroup()
 
@@ -580,12 +609,14 @@ class VectorField(object):
             if thicknesses:
                 self.setScalar(thicknesses[i])
 
-            face_groups[i], vol_groups[i], extruded_edge_groups[i], extruded_edge_surface_groups[i], bnd_face_groups[i], lookup_tables[i] = self.extrudeSurface(face_groups[i-1],extruded_edge_groups[i-1])
-            self.setRestricedGroup(face_groups[i])
+
+            face_groups_rest[i], vol_groups[i], extruded_edge_groups[i], extruded_edge_surface_groups[i], extruded_face_groups[i], bnd_face_groups[i], lookup_tables[i] = self.extrudeSurface(group = face_groups_rest[i-1], edge_groups = extruded_edge_groups[i-1],face_groups = extruded_face_groups[i-1])
+            
+            self.setRestricedGroup(face_groups_rest[i])
             
                 
         self.setRestricedGroup(original_rst_group)
-        return face_groups, vol_groups, extruded_edge_groups, extruded_edge_surface_groups, bnd_face_groups, lookup_tables
+        return face_groups_rest, vol_groups, extruded_edge_groups, extruded_edge_surface_groups, extruded_face_groups, bnd_face_groups, lookup_tables
             
 
     def applyVectorFieldOnSurface(self,mesh=None,group=None):
