@@ -631,7 +631,7 @@ class NormalVectorField(VectorField):
     The current version only works on surfaces, and on
     linear elements. Hopefully this will change.
     """
-    def __init__(self,mesh,scalar = 1.0, restricted_group=None,fast = False):
+    def __init__(self,mesh,scalar = 1.0, restricted_group=None,fast = True):
         
         super(NormalVectorField,self).__init__(mesh,scalar,restricted_group)
 
