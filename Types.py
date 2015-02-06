@@ -374,7 +374,7 @@ class VectorField(object):
         """
         pass
 
-    def _processLookupTable(self,lookup_table):
+    def _processLookupTables(self,lookup_table):
         """
         Stub method for processing steps with
         lookup tables.
@@ -617,7 +617,7 @@ class VectorField(object):
             face_groups_rest[i], vol_groups[i], extruded_edge_groups[i], extruded_edge_surface_groups[i], extruded_face_groups[i], bnd_face_groups[i], lookup_tables[i] = self.extrudeSurface(group = face_groups_rest[i-1], edge_groups = extruded_edge_groups[i-1],face_groups = extruded_face_groups[i-1])
             
             self.setRestricedGroup(face_groups_rest[i])
-            
+            self._processLookupTables(lookup_tables)
                 
         self.setRestricedGroup(original_rst_group)
         return face_groups_rest, vol_groups, extruded_edge_groups, extruded_edge_surface_groups, extruded_face_groups, bnd_face_groups, lookup_tables
