@@ -570,8 +570,7 @@ class VectorField(object):
         else:
             salome.sg.updateObjBrowser(0)
             return face_group, vol_group, [], [], [], bnd_faces,lookup_table
-
-
+        
     def extrudeSurfaceTimes(self,k,group=None, edge_groups = [], face_groups = []):
         """
         This method applies the vector field on a surface and creates
@@ -804,3 +803,61 @@ class MeanCurvatureNormal(NormalVectorField):
         
         return self.meanCurvatureNormalFormula(elems,node_id,voroni=True)
 
+############################################################################################
+class MultiLayerVectorField(VectorField):
+    """
+    Vectorfields for which are dependent on the nr of layers, and
+    the current Layer
+    """
+    def _setNrLayers(self,nr_layers):
+        """
+        Sets the parameter nr_layers.
+        nr_layers is a help parameter,which is not set per default.
+
+        Arguments:
+        - `self`:
+        - `nr_layers`
+        """
+        self.nr_layers = nr_layers
+
+    def _setLayer(self,layer):
+        """
+        Sets the number of the current layer, where
+        the vector field lives currently on.
+
+        Arguments:
+        - `self`:
+        - `layer`: nr of current layer
+        """
+        self.current_layer = layer
+
+
+    def _getLayer(self,layer):
+        """
+        Sets the number of the current layer, where
+        the vector field lives currently on.
+
+        Arguments:
+        - `self`:
+        - `layer`: nr of current layer
+        """
+        return self.current_layer
+
+    def extrudeSurfaceTimes(self,k,group=None, edge_groups = [], face_groups = []):
+        """
+        This method applies the vector field on a surface and creates
+        a translated one over k steps.
+
+        Arguments:
+        - `self`: 
+        - `k`: number of extrusions, or list of extrusion thicknesses
+        - `mesh`: Optional smesh.Mesh instance. Per defualt it is self.mesh
+        - `group`: Optional group of elements on which we apply the vector field.
+        - `table`: Variable if lookup table should be returned for further steps.
+        """
+
+        self._setNrLayers(k)
+        self._setLayer(0)
+
+        return super(VectorField, self).extrudeSurfaceTimes(k,group=group, edge_groups = edge_groups, 
+                                                            face_groups = face_groups)
