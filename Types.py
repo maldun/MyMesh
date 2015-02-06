@@ -373,6 +373,12 @@ class VectorField(object):
         Applies necessary update operations.
         """
         pass
+
+    def _processLookupTable(self,lookup_table):
+        """
+        Stub method for processing steps with
+        lookup tables.
+        """
     
     def applyVectorOnNode(self,node_id, mesh = None):
         """
@@ -861,3 +867,45 @@ class MultiLayerVectorField(VectorField):
 
         return super(VectorField, self).extrudeSurfaceTimes(k,group=group, edge_groups = edge_groups, 
                                                             face_groups = face_groups)
+
+
+
+class PlaneProjectionVectorField(MultiLayerVectorField):
+    """
+    A layer dependent VectorField which projects a
+    mesh surface onto a plane which is given by a
+    local coordinate system Q = array([u,v,w]) which is an
+    orthonormal matrix, where u,v form the local
+    xy-plane, and w is the local z-Axis, 
+    and an origin O.
+    Further it will be assumed, that the plane
+    lies completely on one side of the surface,
+    and that there is a minimal distance d between
+    surface and plane. 
+    """
+    def __init__(self,mesh,O,Q,d,signum = 1.0, scalar = 1.0, restricted_group=None):
+        """
+        Arguments:
+        - `self`: 
+        - `O`: origin given as an numpy array or an tuple/list of 3 real numbers.
+        - `Q`: An orthonormal matrix provided either as numpy array or as list of vectors.
+        - `d`: Real number which represents the minimal distance between the currrent surface and the plane.
+        - `signum`: Sign which represents the side where the current surface should lie.
+        """
+        self.O = array(O)
+        self.Q = array(Q)
+        self.d = d
+        self.signum = signum
+        super(MultiLayerVectorField,self).__init__(mesh, scalar = scalar, 
+                                                   restricted_group=restricted_group)
+        
+    def computeVectorOnNode(self,node_id):
+        """
+        The vectors are computed only at the first time,
+        then lookup tables will be used to transport
+        the nodes up to the plane.
+
+        - `self`: 
+        - `node_id`: id of the current node.
+        """
+        pass
