@@ -884,7 +884,7 @@ class PlaneProjectionVectorField(MultiLayerVectorField):
     and that there is a minimal distance d between
     surface and plane. 
     """
-    def __init__(self,mesh,O,Q,d,signum = 1.0, scalar = 1.0, restricted_group=None):
+    def __init__(self,mesh,O,Q,d,signum = 1, scalar = 1.0, restricted_group=None):
         """
         Arguments:
         - `self`: 
@@ -895,28 +895,94 @@ class PlaneProjectionVectorField(MultiLayerVectorField):
         """
         self.O = array(O)
         self.Q = array(Q)
+        if d < 0:
+            raise ValueError("Error: Distance measure is negativ!")
         self.d = d
+        if not (signum is 1) or not (signum is -1):
+            raise ValueError(u"Error: Signum is not ±1!")
         self.signum = signum
         self._current_table= {}
+        
+        from MyMath.Types import GeometricTransformation 
+        self.inv_trafo = GeometricTransformation(self.Q,self.O)
+        self.trafo = self.inv_trafo.inv()
+        
         super(MultiLayerVectorField,self).__init__(mesh, scalar = scalar, 
                                                    restricted_group=restricted_group)
-
     def _processLookupTables(self,lookup_tables):
         """
         Takes the latest lookup tables to find the original node.
+        - `self`: 
+        - `lookup_table`: dict to process. 
         """
         latest_table = lookup_tables[self._applied_extrusions]
         keys = self._current_table.keys()
         new_table = [[latest_table[key],self._current_table[key]] for key in keys]
         self._current_table = dict(new_table)
+
+    def getNodeVectors(self):
+        """
+        Collects all the vectors from the nodes for transformation
+        """
+        node_ids = self.mesh.GetNodesId()
+        self._internal_ids = dict([[node_id,i] for i in range(len(node_ids))])
+        vectors = array([self.mesh.GetNodeXYZ(node_id) for node_id in node_ids])
+        return vectors.transpose()
+
+    def _makeChecks(self,trafo_vecs):
+        """
+        Checks if the distance criterias aren't violated.
+        Takes the latest lookup tables to find the original node.
+        - `self`: 
+        - `trafo_vecs`: transformed vectors to check. 
+        """
+        to_check = trafo_vecs[2,:]
+        if self.signunm > 0:
+            if not all(to_check >= d):
+                raise ValueError("Error: Surface does not match criterias!")
+
+        if self.signum < 0:
+            if not all(to_check <= d):
+                raise ValueError("Error: Surface does not match criterias!")
+
+            
+    def computeProjections(self):
+        """
+        Computes the vectors which have to be projeceted.
+        """
+        vectors = self.getNodeVectors()
+        traf_vecs = copy(self.inv_trafo(vectors))
+        self._makeChecks(traf_vecs)
+        traf_vecs[3,:] = 0.0
+        proj_vecs = self.trafo(trav_vecs)
         
+        return  proj_vecs - vectors
+
+    def distribution(self):
+        """
+        Distribution function for dividing edges.
+        """
+        return 1.0/self.nr_layers
+    
     def computeVectorOnNode(self,node_id):
         """
         The vectors are computed only at the first time,
         then lookup tables will be used to transport
         the nodes up to the plane.
 
+        The formula is simply y = x + v/k
+        where x is the current node, y is the
+        new node and v is the direction.
+
+        Every produced edge is distributed by a formula.
+
         - `self`: 
         - `node_id`: id of the current node.
         """
-        pass
+        if self._applied_extrusions is 0:
+            self._vectors = self.computeProjections()
+            
+        node_vec = array(self.mesh.GetNodeXYZ(node_id))
+        original_id = self._current_table[node_id]
+        internal_id = self._internal_ids[original_id]
+        return node_vec + self._vectors*self.distribution()
