@@ -826,16 +826,16 @@ class MultiLayerVectorField(VectorField):
         """
         self.nr_layers = nr_layers
 
-    def _setLayer(self,layer):
+    def _setAppliedExtrusion(self,applied_extrusions):
         """
-        Sets the number of the current layer, where
-        the vector field lives currently on.
+        Sets the number of the applied extrusion layers, 
+        where the vector field lives currently on.
 
         Arguments:
         - `self`:
         - `layer`: nr of current layer
         """
-        self.current_layer = layer
+        self._applied_extrusions = applied_extrusions
 
 
     def _getLayer(self,layer):
@@ -863,9 +863,10 @@ class MultiLayerVectorField(VectorField):
         """
 
         self._setNrLayers(k)
-        self._setLayer(0)
+        self._setAppliedExtrusion(0)
 
-        return super(VectorField, self).extrudeSurfaceTimes(k,group=group, edge_groups = edge_groups, 
+        return super(VectorField, self).extrudeSurfaceTimes(k,group=group, 
+                                                            edge_groups = edge_groups, 
                                                             face_groups = face_groups)
 
 
@@ -896,8 +897,18 @@ class PlaneProjectionVectorField(MultiLayerVectorField):
         self.Q = array(Q)
         self.d = d
         self.signum = signum
+        self._current_table= {}
         super(MultiLayerVectorField,self).__init__(mesh, scalar = scalar, 
                                                    restricted_group=restricted_group)
+
+    def _processLookupTables(self,lookup_tables):
+        """
+        Takes the latest lookup tables to find the original node.
+        """
+        latest_table = lookup_tables[self._applied_extrusions]
+        keys = self._current_table.keys()
+        new_table = [[latest_table[key],self._current_table[key]] for key in keys]
+        self._current_table = dict(new_table)
         
     def computeVectorOnNode(self,node_id):
         """
