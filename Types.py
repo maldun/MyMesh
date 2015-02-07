@@ -978,10 +978,12 @@ class MultiLayerVectorField(VectorField):
         self._setNrLayers(k)
         self._setAppliedExtrusion(0)
 
-        return super(VectorField, self).extrudeSurfaceTimes(k,group=group, 
+        result = super(VectorField, self).extrudeSurfaceTimes(k,group=group, 
                                                             edge_groups = edge_groups, 
                                                             face_groups = face_groups)
-
+        # set back to normal behaviour
+        self._setNrLayers(1)
+        return result
 
 
 class PlaneProjectionVectorField(MultiLayerVectorField):
@@ -997,22 +999,23 @@ class PlaneProjectionVectorField(MultiLayerVectorField):
     and that there is a minimal distance d between
     surface and plane. 
     """
-    def __init__(self,mesh,O,Q,d,signum = 1, scalar = 1.0, restricted_group=None):
+    def __init__(self,mesh,O,Q,d,signum = None, scalar = 1.0, restricted_group=None):
         """
         Arguments:
         - `self`: 
         - `O`: origin given as an numpy array or an tuple/list of 3 real numbers.
         - `Q`: An orthonormal matrix provided either as numpy array or as list of vectors.
         - `d`: Real number which represents the minimal distance between the currrent surface and the plane.
-        - `signum`: Sign which represents the side where the current surface should lie.
+        - `signum`: Sign which represents the side where the current surface should lie. If signum is None the side of the plane is not considered.
         """
         self.O = array(O)
         self.Q = array(Q)
         if d < 0:
             raise ValueError("Error: Distance measure is negativ!")
         self.d = d
-        if not (signum is 1) or not (signum is -1):
-            raise ValueError(u"Error: Signum is not ±1!")
+        if not signum is None:
+            if not (signum is 1) or not (signum is -1):
+                raise ValueError(u"Error: Signum is not ±1!")
         self.signum = signum
         self._current_table= {}
         
@@ -1050,14 +1053,17 @@ class PlaneProjectionVectorField(MultiLayerVectorField):
         - `trafo_vecs`: transformed vectors to check. 
         """
         to_check = trafo_vecs[2,:]
-        if self.signunm > 0:
-            if not all(to_check >= d):
-                raise ValueError("Error: Surface does not match criterias!")
+        if not self.signum is None: 
+            if self.signunm > 0:
+                if not all(to_check >= d):
+                    raise ValueError("Error: Surface does not match criterias!")
 
-        if self.signum < 0:
-            if not all(to_check <= d):
+                if self.signum < 0:
+                    if not all(to_check <= -d):
+                        raise ValueError("Error: Surface does not match criterias!")
+        else:
+            if not all(abs(to_check) >= d):
                 raise ValueError("Error: Surface does not match criterias!")
-
             
     def computeProjections(self):
         """
