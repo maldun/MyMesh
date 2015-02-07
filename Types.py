@@ -928,6 +928,13 @@ class MultiLayerVectorField(VectorField):
     Vectorfields for which are dependent on the nr of layers, and
     the current Layer
     """
+    def  __init__(self,mesh, scalar = 1.0, restricted_group=None):
+        """
+        Init method has to set the default value for layers to one.
+        """
+        self.nr_layers(1)
+        super(VectorField,self).__init__(mesh, scalar, restricted_group)
+    
     def _setNrLayers(self,nr_layers):
         """
         Sets the parameter nr_layers.
