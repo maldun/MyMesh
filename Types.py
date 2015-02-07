@@ -671,7 +671,9 @@ class VectorField(object):
         - `node_id`: id of the node to be translated.
         """
         vector = self.computeVectorOnNode(node_id)
-        self.mesh.MoveNode(node_id,)
+        coords = array(self.mesh.GetNodeXYZ(node_id))
+        coords += vector
+        self.mesh.MoveNode(node_id,*coords)
         
 
 class NormalVectorField(VectorField):
