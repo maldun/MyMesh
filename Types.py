@@ -37,7 +37,9 @@ import SMESH
 
 from smesh import GetFilter, EDGE, FACE, VOLUME, FT_LinearOrQuadratic, Geom_TRIANGLE, Geom_QUADRANGLE
 
+
 from numpy import array, ndarray, arange, cross, zeros, inner, append
+from numpy import sum, apply_along_axis
 from numpy.linalg import norm
 from numpy import float64 as data_type
 from numpy import arccos, tan, pi
@@ -106,6 +108,9 @@ class FaceElement(Element):
 
     def getCurvatureVector(self,node,voroni=False):
         raise NotImplementedError("Error: Not implemented!")
+
+    def computeGravityCenter(self):
+        pass
 
 
     
@@ -199,9 +204,32 @@ class Tria3(FaceElement):
             return (1/tan(w1))*l2 + (1/tan(w2))*l1, self._computeVoroniArea(w1,w2,l1,l2)
         
         return (1/tan(w1))*l2 + (1/tan(w2))*l1
-        
-        
 
+    def computeGravityCenter(self):
+        """
+        Computes the center of gravity (from the zero vector) by the well known forumla
+
+        math::
+        
+          (x_i + x_{i+1} + x_{xi+2})/3
+          
+        x_i
+          +
+          |\
+          | \
+          |  \
+        l1|   \l2
+          |    \
+          |     \
+          |w1  w2\
+          +-------+
+        x_j  l3  x_{j+1}
+
+        """
+        nodes = self.getNodes()
+        coord_matrix = array([self.mesh.GetNodeXYZ(node) for node in nodes])
+        return apply_along_axis(sum,0,coord_matrix)/3.0
+    
 class Quad4(FaceElement):
     """
     Simple linear quadrangles with 4 corners
@@ -330,6 +358,38 @@ class Quad4(FaceElement):
             return (1/tan(v1))*l3 + (1/tan(v2))*l1
 
 
+    def computeGravityCenter(self):
+        """
+        Computes the center of gravity of a quadrangle.
+        in a quadrangle. We have the quadrangle (x_j, x_{j+1} x_{j+2} and x_{j+3}) .
+        We interprete the quadrangle as two halfed triangles to derive the 
+        center. first we compute the center of gravity for the two triangles, and
+        then we get center by taking the weighted mean.
+        
+        x_{j+3} l3 x_{j+2}
+           +-------+
+           |\    w4|
+           | \     |
+           |  \l2  |
+         l1|   \   |l5
+           |    \w3|
+           |     \ |
+           |w1  w2\|
+           +-------+
+        x_j    l4  x_{j+1}
+
+        """
+        nodes = self.getNodes()
+        index_node = nodes.index(node)
+
+        # the strange arangement is historically
+        x_jp3 = array(self.mesh.GetNodeXYZ(node))
+        x_j = array(self.mesh.GetNodeXYZ(nodes[index_node-1]))
+        x_jp = array(self.mesh.GetNodeXYZ(nodes[index_node-2]))
+        x_jp2 = array(self.mesh.GetNodeXYZ(nodes[index_node-3]))
+
+        
+        
 class VectorField(object):
     """
     Class that represents a vector field which is applied on the nodes of 
