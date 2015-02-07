@@ -986,3 +986,4 @@ class PlaneProjectionVectorField(MultiLayerVectorField):
         original_id = self._current_table[node_id]
         internal_id = self._internal_ids[original_id]
         return node_vec + self._vectors*self.distribution()
+        
