@@ -366,7 +366,7 @@ class Quad4(FaceElement):
         center. first we compute the center of gravity for the two triangles, and
         then we get center by taking the weighted mean.
         
-        x_{j+3} l3 x_{j+2}
+        x_j l3 x_{j+3}
            +-------+
            |\    w4|
            | \     |
@@ -376,19 +376,22 @@ class Quad4(FaceElement):
            |     \ |
            |w1  w2\|
            +-------+
-        x_j    l4  x_{j+1}
+        x_{j+1} l4 x_{j+2}
 
         """
         nodes = self.getNodes()
-        index_node = nodes.index(node)
 
         # the strange arangement is historically
-        x_jp3 = array(self.mesh.GetNodeXYZ(node))
-        x_j = array(self.mesh.GetNodeXYZ(nodes[index_node-1]))
-        x_jp = array(self.mesh.GetNodeXYZ(nodes[index_node-2]))
-        x_jp2 = array(self.mesh.GetNodeXYZ(nodes[index_node-3]))
-
+        x_j = array(self.mesh.GetNodeXYZ(nodes[0]))
+        x_jp1 = array(self.mesh.GetNodeXYZ(nodes[1]))
+        x_jp2 = array(self.mesh.GetNodeXYZ(nodes[2]))
+        x_jp3 = array(self.mesh.GetNodeXYZ(nodes[3]))
         
+        S1 = (x_j + x_jp1 + x_jp2)/3.0
+        S2 = (x_j + x_jp2 + x_jp3)/3.0
+        area1 = norm(cross(x_j-x_jp1,x_jp2-x_j))
+        area2 = norm(cross(x_j-x_jp3,x_jp2-x_jp3))
+        return (S1*area1+S2*area2)/(area1+area2)
         
 class VectorField(object):
     """
