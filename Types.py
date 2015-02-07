@@ -969,6 +969,35 @@ class MultiLayerVectorField(VectorField):
         """
         return self.current_layer
 
+    def _preProcess(k,group,edge_groups,face_groups):
+        """
+        Possible preprocessing steps for layer extrusion.
+
+        Arguments:
+        - `self`: 
+        - `k`: number of extrusions, or list of extrusion thicknesses
+        - `mesh`: Optional smesh.Mesh instance. Per defualt it is self.mesh
+        - `groups`: Optional group of elements on which we apply the vector field.
+        - `edge_groups`: Groups of edges.
+        - `face_groups`: Groups of faces.
+        """
+        pass
+
+    def _postProcess(k,group,edge_groups,face_groups):
+        """
+        Possible preprocessing steps for layer extrusion.
+
+        Arguments:
+        - `self`: 
+        - `k`: number of extrusions, or list of extrusion thicknesses
+        - `mesh`: Optional smesh.Mesh instance. Per defualt it is self.mesh
+        - `groups`: Optional group of elements on which we apply the vector field.
+        - `edge_groups`: Groups of edges.
+        - `face_groups`: Groups of faces.
+        """
+        pass
+
+    
     def extrudeSurfaceTimes(self,k,group=None, edge_groups = [], face_groups = []):
         """
         This method applies the vector field on a surface and creates
@@ -978,18 +1007,23 @@ class MultiLayerVectorField(VectorField):
         - `self`: 
         - `k`: number of extrusions, or list of extrusion thicknesses
         - `mesh`: Optional smesh.Mesh instance. Per defualt it is self.mesh
-        - `group`: Optional group of elements on which we apply the vector field.
-        - `table`: Variable if lookup table should be returned for further steps.
+        - `groups`: Optional group of elements on which we apply the vector field.
+        - `edge_groups`: Groups of edges.
+        - `face_groups`: Groups of faces.
         """
 
         self._setNrLayers(k)
         self._setAppliedExtrusion(0)
-
+        # preperations steps
+        self._preProcess(k,group,edge_groups,face_groups)
+        
         result = super(VectorField, self).extrudeSurfaceTimes(k,group=group, 
                                                             edge_groups = edge_groups, 
                                                             face_groups = face_groups)
         # set back to normal behaviour
         self._setNrLayers(1)
+        # make postprocessing steps
+        self._postProcess(k,group,edge_groups,face_groups)
         return result
 
 
@@ -1005,6 +1039,9 @@ class PlaneProjectionVectorField(MultiLayerVectorField):
     lies completely on one side of the surface,
     and that there is a minimal distance d between
     surface and plane. 
+
+    To optimize computation time, vectors of given groups will be calculated beforehand
+    and then looked up, instead computed everytime.
     """
     def __init__(self,mesh,O,Q,d,signum = None, scalar = 1.0, restricted_group=None):
         """
@@ -1029,9 +1066,43 @@ class PlaneProjectionVectorField(MultiLayerVectorField):
         from MyMath.Types import GeometricTransformation 
         self.inv_trafo = GeometricTransformation(self.Q,self.O)
         self.trafo = self.inv_trafo.inv()
+
+        self._vectors = None
         
         super(MultiLayerVectorField,self).__init__(mesh, scalar = scalar, 
                                                    restricted_group=restricted_group)
+
+    def _preProcess(k,group,edge_groups,face_groups):
+        """
+        Possible preprocessing steps for layer extrusion.
+        Computes the vectors beforehand.
+
+        Arguments:
+        - `self`: 
+        - `k`: number of extrusions, or list of extrusion thicknesses
+        - `mesh`: Optional smesh.Mesh instance. Per defualt it is self.mesh
+        - `groups`: Optional group of elements on which we apply the vector field.
+        - `edge_groups`: Groups of edges.
+        - `face_groups`: Groups of faces.
+        """
+        self._vectors = self.computeProjections(group)
+
+    def _postProcess(k,group,edge_groups,face_groups):
+        """
+        Possible preprocessing steps for layer extrusion.
+        Resets _vectors to None
+
+        Arguments:
+        - `self`: 
+        - `k`: number of extrusions, or list of extrusion thicknesses
+        - `mesh`: Optional smesh.Mesh instance. Per defualt it is self.mesh
+        - `groups`: Optional group of elements on which we apply the vector field.
+        - `edge_groups`: Groups of edges.
+        - `face_groups`: Groups of faces.
+        """
+        self._vectors = None
+
+        
     def _processLookupTables(self,lookup_tables):
         """
         Takes the latest lookup tables to find the original node.
@@ -1043,11 +1114,16 @@ class PlaneProjectionVectorField(MultiLayerVectorField):
         new_table = [[latest_table[key],self._current_table[key]] for key in keys]
         self._current_table = dict(new_table)
 
-    def getNodeVectors(self):
+    def getNodeVectors(self,group=None):
         """
         Collects all the vectors from the nodes for transformation
         """
-        node_ids = self.mesh.GetNodesId()
+
+        if group is None:
+            node_ids = self.mesh.GetNodesId()
+        else:
+            nodes = group.GetNodeIDs()
+
         self._internal_ids = dict([[node_id,i] for i in range(len(node_ids))])
         vectors = array([self.mesh.GetNodeXYZ(node_id) for node_id in node_ids])
         return vectors.transpose()
@@ -1059,7 +1135,11 @@ class PlaneProjectionVectorField(MultiLayerVectorField):
         - `self`: 
         - `trafo_vecs`: transformed vectors to check. 
         """
-        to_check = trafo_vecs[2,:]
+        # check if we have single vector
+        if len(trafo_vecs.shape):
+            to_check = array([traf_vecs[2]])
+        else:
+            to_check = trafo_vecs[2,:]
         if not self.signum is None: 
             if self.signunm > 0:
                 if not all(to_check >= d):
@@ -1072,23 +1152,56 @@ class PlaneProjectionVectorField(MultiLayerVectorField):
             if not all(abs(to_check) >= d):
                 raise ValueError("Error: Surface does not match criterias!")
             
-    def computeProjections(self):
+    def computeProjections(self,group=None):
         """
         Computes the vectors which have to be projeceted.
         """
-        vectors = self.getNodeVectors()
+        vectors = self.getNodeVectors(group)
         traf_vecs = copy(self.inv_trafo(vectors))
         self._makeChecks(traf_vecs)
-        traf_vecs[3,:] = 0.0
+        traf_vecs[2,:] = 0.0
         proj_vecs = self.trafo(trav_vecs)
         
         return  proj_vecs - vectors
 
+    def computeSingleProjection(self,node_id):
+        """
+        Computes the Projection for one node
+
+        Arguments:
+        - `self`: 
+        - `node_id`: id of the current node.
+        """
+        vector = array(self.mesh.GetNodeXYZ(node_id))
+        trafo_vec = self.inv_trafo(vector)
+        self._makeChecks(trafo_vec)
+        trafo_vec[2] = 0.0
+        proj_vec = self.trafo(trafo_vec)
+
+        return proj_vec - vector
+        
     def distribution(self):
         """
         Distribution function for dividing edges.
         """
         return 1.0/self.nr_layers
+
+    def MoveSurface(self,group=None):
+        """
+        This method applies the vector field on a surface and creates
+        a translated one. Optional the new surface can be stored in a new mesh.
+        For The PlaneProjectionVectorField it is reasonable to preprocess 
+        the computation.
+
+        Arguments:
+        - `self`: 
+        - `mesh`: Optional smesh.Mesh instance. Per defualt it is self.mesh
+        - `group`: Optional group of elements on which we apply the vector field.
+        """
+        self._vectors = self.computeProjections(group)
+        super(VectorField,self).MoveSurface(group)
+        # reset vectors
+        self._vectors = None
     
     def computeVectorOnNode(self,node_id):
         """
@@ -1102,14 +1215,17 @@ class PlaneProjectionVectorField(MultiLayerVectorField):
 
         Every produced edge is distributed by a formula.
 
+        Arguments:
         - `self`: 
         - `node_id`: id of the current node.
         """
-        if self._applied_extrusions is 0:
-            self._vectors = self.computeProjections()
-            
         node_vec = array(self.mesh.GetNodeXYZ(node_id))
-        original_id = self._current_table[node_id]
-        internal_id = self._internal_ids[original_id]
-        return node_vec + self._vectors*self.distribution()
+        if self._vectors is None:
+            vector = self.computeSingleProjection(node_id)*self.distribution()
+        else:
+            original_id = self._current_table[node_id]
+            internal_id = self._internal_ids[original_id]
+            vector = self._vectors[:,internal_id]*self.distribution()
+            
+        return node_vec + vector
         
