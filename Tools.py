@@ -31,7 +31,7 @@ import SMESH
 from smesh import GetFilter, EDGE, FACE, VOLUME, FT_LinearOrQuadratic, Geom_TRIANGLE, Geom_QUADRANGLE
 from SMESH import Entity_Triangle, Entity_Quadrangle
 
-from numpy import array, ndarray, arange, cross, inner
+from numpy import array, ndarray, arange, cross, inner, zeros
 from numpy.linalg import norm
 from numpy import float64 as data_type
 from numpy import arccos, tan, pi
@@ -89,3 +89,30 @@ def compute_voroni_area_of_triangle(w1,w2,l1,l2):
 
     #Else use formula on page 9 in [1]
     return ((1/tan(w1))*inner(l2,l2) + (1/tan(w2))*inner(l1,l1))/8.0
+
+def compute_gravity_center(mesh):
+    u"""
+    Computes the center of gravity of a mesh, by
+    the discrete formula
+
+        (Σₑ area(e)·Sₑ)/(Σₑ area(e)).
+    """
+    # filter linear and triangle elements
+    filter_linear_tri = GetFilter(FACE, FT_LinearOrQuadratic, Geom_TRIANGLE)
+    filter_linear_quad = GetFilter(FACE, FT_LinearOrQuadratic, Geom_QUADRANGLE)
+    
+    ids_tri = mesh.GetIdsFromFilter(filter_linear_tri)
+    ids_quad = mesh.GetIdsFromFilter(filter_linear_quad)
+    
+    tria3 = [Tria3(mesh,id_tri) for id_tri in ids_tri]
+    quad4 = [Tria3(mesh,id_tri) for id_tri in ids_tri]
+    elems = tria3 + quad4
+    S = zeros(3)
+    A = 0
+    for e in elems:
+        a = e.computeArea(store=False)
+        S += a*e.computeGravityCenter()
+        A += a
+
+    return S/A
+        
