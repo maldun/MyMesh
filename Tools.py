@@ -1,3 +1,6 @@
+#!/usr/bin/python
+# -*- coding: utf-8 -*-
+
 # MyMesh Module - API for easier Salome smesh usage
 # Basics.py: Smesh helper functions and classes for basic operations 
 #

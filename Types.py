@@ -1,7 +1,10 @@
+#!/usr/bin/python
+# -*- coding: utf-8 -*-
+
 # MyMesh Module - API for easier Salome smesh usage
 # Basics.py: Smesh helper functions and classes for basic operations 
 #
-# Copyright (C) 2013  Stefan Reiterer - maldun.finsterschreck@gmail.com
+# Copyright (C) 2013  Stefan Reiterer - stefan.harald.reiterer@gmail.com
 #
 # This library is free software; you can redistribute it and/or
 # modify it under the terms of the GNU Lesser General Public
@@ -658,6 +661,18 @@ class VectorField(object):
 
         return new_face_ids, lookup_table
 
+    def moveNodeByVector(self,node_id):
+        """
+        This method applies the vector field on a node and moves it without creating
+        a new node.
+
+        Arguments:
+        - `self`: 
+        - `node_id`: id of the node to be translated.
+        """
+        vector = self.computeVectorOnNode(node_id)
+        self.mesh.MoveNode(node_id,)
+        
 
 class NormalVectorField(VectorField):
 
