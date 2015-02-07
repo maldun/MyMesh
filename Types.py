@@ -37,7 +37,7 @@ import SMESH
 
 from smesh import GetFilter, EDGE, FACE, VOLUME, FT_LinearOrQuadratic, Geom_TRIANGLE, Geom_QUADRANGLE
 
-from numpy import array, ndarray, arange, cross, zeros, inner
+from numpy import array, ndarray, arange, cross, zeros, inner, append
 from numpy.linalg import norm
 from numpy import float64 as data_type
 from numpy import arccos, tan, pi
@@ -661,6 +661,20 @@ class VectorField(object):
 
         return new_face_ids, lookup_table
 
+    def computeNewPosition(self,node_id):
+        """
+        This method applies the vector field on a node and computes the position
+        of a new node moved by the vector field.
+
+        Arguments:
+        - `self`: 
+        - `node_id`: id of the node to be translated.
+        """
+        vector = self.computeVectorOnNode(node_id)
+        coords = array(self.mesh.GetNodeXYZ(node_id))
+        coords += vector
+        return coords
+        
     def moveNodeByVector(self,node_id):
         """
         This method applies the vector field on a node and moves it without creating
@@ -670,12 +684,31 @@ class VectorField(object):
         - `self`: 
         - `node_id`: id of the node to be translated.
         """
-        vector = self.computeVectorOnNode(node_id)
-        coords = array(self.mesh.GetNodeXYZ(node_id))
-        coords += vector
+        coords = self.computeNewPosition(node_id)
         self.mesh.MoveNode(node_id,*coords)
         
+    def MoveSurface(self,group=None):
+        """
+        This method applies the vector field on a surface and creates
+        a translated one. Optional the new surface can be stored in a new mesh.
 
+        Arguments:
+        - `self`: 
+        - `mesh`: Optional smesh.Mesh instance. Per defualt it is self.mesh
+        - `group`: Optional group of elements on which we apply the vector field.
+        """
+        
+        if group is None:
+            nodes = self.mesh.GetNodesId()
+        else:
+            nodes = group.GetNodeIDs()
+
+        # To avoid wrong computations the vectors have to be computed
+        # before the nodes are moved 
+        new_node_positions = [[node] + self.computeNewPosition(node).tolist() for node in nodes]
+        for position in new_node_positions: 
+            self.mesh.MoveNode(*position)
+        
 class NormalVectorField(VectorField):
 
     """
