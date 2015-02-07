@@ -4,7 +4,7 @@
 # MyMesh Module - API for easier Salome smesh usage
 # Basics.py: Smesh helper functions and classes for basic operations 
 #
-# Copyright (C) 2013  Stefan Reiterer - maldun.finsterschreck@gmail.com
+# Copyright (C) 2015  Stefan Reiterer - stefan.harald.reiterer@gmail.com
 #
 # This library is free software; you can redistribute it and/or
 # modify it under the terms of the GNU Lesser General Public
