@@ -22,14 +22,27 @@
 
 from __future__ import print_function
 
-import salome
-import geompy
-import GEOM
-import smesh
-import SMESH
+# import salome
+# import geompy
+# import GEOM
+# import smesh
+# import SMESH
 
-from smesh import GetFilter, EDGE, FACE, VOLUME, FT_LinearOrQuadratic, Geom_TRIANGLE, Geom_QUADRANGLE
+import salome
+salome.salome_init()
+import GEOM
+from salome.geom import geomBuilder
+geompy = geomBuilder.New(salome.myStudy)
+
+import SMESH, SALOMEDS
+from salome.smesh import smeshBuilder
+smesh =  smeshBuilder.New(salome.myStudy)
+
+
+#from smesh import GetFilter
+GetFilter = smesh.GetFilter
 from SMESH import Entity_Triangle, Entity_Quadrangle
+from SMESH import EDGE, FACE, VOLUME, FT_LinearOrQuadratic, Geom_TRIANGLE, Geom_QUADRANGLE
 
 from numpy import array, ndarray, arange, cross, inner, zeros
 from numpy.linalg import norm

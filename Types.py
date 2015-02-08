@@ -29,14 +29,26 @@ REFERENCES:
 
 from __future__ import print_function
 
+# import salome
+# import geompy
+# import GEOM
+# import smesh
+# import SMESH
+
 import salome
-import geompy
+salome.salome_init()
 import GEOM
-import smesh
-import SMESH
+from salome.geom import geomBuilder
+geompy = geomBuilder.New(salome.myStudy)
 
-from smesh import GetFilter, EDGE, FACE, VOLUME, FT_LinearOrQuadratic, Geom_TRIANGLE, Geom_QUADRANGLE
+import SMESH, SALOMEDS
+from salome.smesh import smeshBuilder
+smesh =  smeshBuilder.New(salome.myStudy)
 
+
+#from smesh import GetFilter
+GetFilter = smesh.GetFilter
+from SMESH import EDGE, FACE, VOLUME, FT_LinearOrQuadratic, Geom_TRIANGLE, Geom_QUADRANGLE
 
 from numpy import array, ndarray, arange, cross, zeros, inner, append
 from numpy import sum, apply_along_axis, copy
@@ -1245,3 +1257,39 @@ class PlaneProjectionVectorField(MultiLayerVectorField):
         vector = vector.reshape(DIMENSION) #flatten vector
         return vector - node_vec
         
+class FaceProjectVectorField(MultiLayerVectorField):
+    """
+    A Multilayer vector field which holds a face 
+    provided as geometric object, and uses geompy 
+    to compute the projection, similar to the
+    PlaneProjectionVectorField.
+    """
+    def __init__(self,mesh,face,d,scalar = 1.0, restricted_group=None):
+        """
+        Arguments:
+        - `self`: 
+        - `face`: geometric object which is a face
+        - `d`: Real number which represents the minimal distance between the currrent surface and the plane.
+        """
+
+        if isinstance(face,MyGeomObject) and isinstance(face,MyFace):
+            self.face = face.getGeomObject()
+        elif isinstance(face,GEOM._objref_GEOM_Object):
+            if face.GetShapeType() == GEOM.FACE:
+                self.face = face
+            else:
+                raise ValueError("Error: Geometric Object is not a face!")
+        else:
+            raise ValueError("Error: Geometric Object is not a face!")
+        
+        super(FaceProjectVectorField,self).__init__(mesh, scalar = scalar, 
+                                                    restricted_group=restricted_group)
+
+    def computeVectorOnNode(self,node_id):
+        """
+        The current node is projected on the face.
+        Arguments:
+        - `self`: 
+        - `node_id`: id of the current node.
+        """
+        pass
