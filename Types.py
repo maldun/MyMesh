@@ -1271,7 +1271,7 @@ class FaceProjectVectorField(MultiLayerVectorField):
         - `face`: geometric object which is a face
         - `d`: Real number which represents the minimal distance between the currrent surface and the plane.
         """
-
+        from MyGeom.Types import MyGeomObject, MyFace
         if isinstance(face,MyGeomObject) and isinstance(face,MyFace):
             self.face = face.getGeomObject()
         elif isinstance(face,GEOM._objref_GEOM_Object):
@@ -1281,15 +1281,46 @@ class FaceProjectVectorField(MultiLayerVectorField):
                 raise ValueError("Error: Geometric Object is not a face!")
         else:
             raise ValueError("Error: Geometric Object is not a face!")
+
+
+        if d < 0:
+            raise ValueError("Error: Distance measure is negativ!")
         
+        self.d = d
         super(FaceProjectVectorField,self).__init__(mesh, scalar = scalar, 
                                                     restricted_group=restricted_group)
 
     def computeVectorOnNode(self,node_id):
         """
         The current node is projected on the face.
+        The vector of the direction is returned.
+        
         Arguments:
         - `self`: 
         - `node_id`: id of the current node.
         """
-        pass
+
+        coords = self.mesh.GetNodeXYZ(node_id)
+        vertex = geompy.MakeVertex(*coords)
+        projected_vertex = geompy.MakeProjection(vertex,self.face)
+        new_coords = geompy.PointCoordinates(projected_vertex)
+        
+        vec =  array(new_coords) - array(coords)
+        self._makeChecks(vec)
+        return vec
+        
+    def distribution(self):
+        """
+        Distribution function for dividing edges.
+        """
+        return 1.0/self.nr_layers
+
+    def _makeChecks(self,trafo_vec):
+        """
+        Checks if the distance criterias aren't violated.
+        Takes the latest lookup tables to find the original node.
+        - `self`: 
+        - `trafo_vecs`: transformed vector to check. 
+        """
+        if norm(trafo_vec) < self.d:
+            raise ValueError("Error: Surface does not match criterias!")
