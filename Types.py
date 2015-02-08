@@ -44,6 +44,9 @@ from numpy.linalg import norm
 from numpy import float64 as data_type
 from numpy import arccos, tan, pi
 
+# Nr. of dimension
+DIMENSION=3
+
 class Element(object):
     """
     Help class to handle elements of a mesh.
@@ -828,7 +831,7 @@ class NormalVectorField(VectorField):
             n(x) = m(x)/||m(x)||
         """
 
-        result = zeros(3)
+        result = zeros(DIMENSION)
 
         for elem in elems:
             result += elem.computeNormal(node_id,store=False)
@@ -852,7 +855,7 @@ class NormalVectorField(VectorField):
         (see [1] for more details) 
         """
 
-        normal = zeros(3)
+        normal = zeros(DIMENSION)
         if voroni is False:
             for elem in elems:
                 normal += elem.computeCurvatureVector(node_id)
@@ -1137,19 +1140,19 @@ class PlaneProjectionVectorField(MultiLayerVectorField):
         """
         # check if we have single vector
         if len(trafo_vecs.shape):
-            to_check = array([traf_vecs[2]])
+            to_check = array([trafo_vecs[2]])
         else:
-            to_check = trafo_vecs[2,:]
+            to_check = trafo_vecs[-1,:]
         if not self.signum is None: 
             if self.signunm > 0:
-                if not all(to_check >= d):
+                if not all(to_check >= self.d):
                     raise ValueError("Error: Surface does not match criterias!")
 
                 if self.signum < 0:
-                    if not all(to_check <= -d):
+                    if not all(to_check <= -self.d):
                         raise ValueError("Error: Surface does not match criterias!")
         else:
-            if not all(abs(to_check) >= d):
+            if not all(abs(to_check) >= self.d):
                 raise ValueError("Error: Surface does not match criterias!")
             
     def computeProjections(self,group=None):
@@ -1159,8 +1162,8 @@ class PlaneProjectionVectorField(MultiLayerVectorField):
         vectors = self.getNodeVectors(group)
         traf_vecs = copy(self.inv_trafo(vectors))
         self._makeChecks(traf_vecs)
-        traf_vecs[2,:] = 0.0
-        proj_vecs = self.trafo(trav_vecs)
+        traf_vecs[-1,:] = 0.0
+        proj_vecs = self.trafo(traf_vecs)
         
         return  proj_vecs - vectors
 
@@ -1175,10 +1178,10 @@ class PlaneProjectionVectorField(MultiLayerVectorField):
         vector = array(self.mesh.GetNodeXYZ(node_id))
         trafo_vec = self.inv_trafo(vector)
         self._makeChecks(trafo_vec)
-        trafo_vec[2] = 0.0
+        trafo_vec[-1] = 0.0
         proj_vec = self.trafo(trafo_vec)
 
-        return proj_vec - vector
+        return proj_vec.reshape(DIMENSION) - vector.reshape(DIMENSION)
         
     def distribution(self):
         """

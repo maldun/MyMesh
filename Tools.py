@@ -38,6 +38,8 @@ from numpy import arccos, tan, pi
 
 from Types import Element, Tria3, Quad4
 
+DIMENSION = 3
+
 def find_mesh(descriptive_string):
     """
     Help function to find mesh in a study and converts it to smesh mesh
@@ -113,7 +115,7 @@ def compute_gravity_center(mesh,group=None):
         quad4 = [Tria3(mesh,id_tri) for id_tri in ids_tri if id_tri in group_ids]
 
     elems = tria3 + quad4
-    S = zeros(3)
+    S = zeros(DIMENSION)
     A = 0
     for e in elems:
         a = e.computeArea(store=False)
