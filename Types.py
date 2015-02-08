@@ -741,7 +741,7 @@ class VectorField(object):
         coords += vector
         return coords
         
-    def moveNodeByVector(self,node_id):
+    def moveNode(self,node_id):
         """
         This method applies the vector field on a node and moves it without creating
         a new node.
@@ -753,7 +753,7 @@ class VectorField(object):
         coords = self.computeNewPosition(node_id)
         self.mesh.MoveNode(node_id,*coords)
         
-    def MoveSurface(self,group=None):
+    def moveSurface(self,group=None):
         """
         This method applies the vector field on a surface and creates
         a translated one. Optional the new surface can be stored in a new mesh.
@@ -931,13 +931,14 @@ class MultiLayerVectorField(VectorField):
     Vectorfields for which are dependent on the nr of layers, and
     the current Layer
     """
-    def  __init__(self,mesh, scalar = 1.0, restricted_group=None):
+    def __init__(self,mesh, scalar = 1.0, restricted_group=None):
         """
         Init method has to set the default value for layers to one.
-        """
-        self.nr_layers(1)
-        super(VectorField,self).__init__(mesh, scalar, restricted_group)
-    
+        """        
+        self._setNrLayers(1)
+        super(MultiLayerVectorField,self).__init__(mesh, scalar, restricted_group)
+
+        
     def _setNrLayers(self,nr_layers):
         """
         Sets the parameter nr_layers.
@@ -1020,7 +1021,7 @@ class MultiLayerVectorField(VectorField):
         # preperations steps
         self._preProcess(k,group,edge_groups,face_groups)
         
-        result = super(VectorField, self).extrudeSurfaceTimes(k,group=group, 
+        result = super(MultiLayerVectorField, self).extrudeSurfaceTimes(k,group=group, 
                                                             edge_groups = edge_groups, 
                                                             face_groups = face_groups)
         # set back to normal behaviour
@@ -1055,6 +1056,8 @@ class PlaneProjectionVectorField(MultiLayerVectorField):
         - `d`: Real number which represents the minimal distance between the currrent surface and the plane.
         - `signum`: Sign which represents the side where the current surface should lie. If signum is None the side of the plane is not considered.
         """
+
+        
         self.O = array(O)
         self.Q = array(Q)
         if d < 0:
@@ -1071,9 +1074,9 @@ class PlaneProjectionVectorField(MultiLayerVectorField):
         self.trafo = self.inv_trafo.inv()
 
         self._vectors = None
-        
-        super(MultiLayerVectorField,self).__init__(mesh, scalar = scalar, 
-                                                   restricted_group=restricted_group)
+        super(PlaneProjectionVectorField,self).__init__(mesh, scalar = scalar, 
+                                                restricted_group=restricted_group)
+
 
     def _preProcess(k,group,edge_groups,face_groups):
         """
@@ -1202,7 +1205,7 @@ class PlaneProjectionVectorField(MultiLayerVectorField):
         - `group`: Optional group of elements on which we apply the vector field.
         """
         self._vectors = self.computeProjections(group)
-        super(VectorField,self).MoveSurface(group)
+        super(PlaneProjectionVectorField,self).moveSurface(group)
         # reset vectors
         self._vectors = None
     
