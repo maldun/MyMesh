@@ -1015,7 +1015,7 @@ class MultiLayerVectorField(VectorField):
         - `edge_groups`: Groups of edges.
         - `face_groups`: Groups of faces.
         """
-
+        raise NotImplementedError("Error: Multiple extrusion not tested for any subclass yet!")
         self._setNrLayers(k)
         self._setAppliedExtrusion(0)
         # preperations steps
