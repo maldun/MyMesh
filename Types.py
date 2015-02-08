@@ -39,7 +39,7 @@ from smesh import GetFilter, EDGE, FACE, VOLUME, FT_LinearOrQuadratic, Geom_TRIA
 
 
 from numpy import array, ndarray, arange, cross, zeros, inner, append
-from numpy import sum, apply_along_axis
+from numpy import sum, apply_along_axis, copy
 from numpy.linalg import norm
 from numpy import float64 as data_type
 from numpy import arccos, tan, pi
@@ -1128,9 +1128,9 @@ class PlaneProjectionVectorField(MultiLayerVectorField):
         if group is None:
             node_ids = self.mesh.GetNodesId()
         else:
-            nodes = group.GetNodeIDs()
+            node_ids = group.GetNodeIDs()
 
-        self._internal_ids = dict([[node_id,i] for i in range(len(node_ids))])
+        self._internal_ids = dict([[node_ids[i],i] for i in range(len(node_ids))])
         vectors = array([self.mesh.GetNodeXYZ(node_id) for node_id in node_ids])
         return vectors.transpose()
 
@@ -1142,8 +1142,8 @@ class PlaneProjectionVectorField(MultiLayerVectorField):
         - `trafo_vecs`: transformed vectors to check. 
         """
         # check if we have single vector
-        if len(trafo_vecs.shape):
-            to_check = array([trafo_vecs[2]])
+        if len(trafo_vecs.shape) is 1:
+            to_check = array([trafo_vecs[-1]])
         else:
             to_check = trafo_vecs[-1,:]
         if not self.signum is None: 
@@ -1163,12 +1163,12 @@ class PlaneProjectionVectorField(MultiLayerVectorField):
         Computes the vectors which have to be projeceted.
         """
         vectors = self.getNodeVectors(group)
-        traf_vecs = copy(self.inv_trafo(vectors))
+        traf_vecs = copy(self.trafo(vectors))
         self._makeChecks(traf_vecs)
         traf_vecs[-1,:] = 0.0
-        proj_vecs = self.trafo(traf_vecs)
+        proj_vecs = self.inv_trafo(traf_vecs)
         
-        return  proj_vecs - vectors
+        return  proj_vecs
 
     def computeSingleProjection(self,node_id):
         """
@@ -1179,12 +1179,12 @@ class PlaneProjectionVectorField(MultiLayerVectorField):
         - `node_id`: id of the current node.
         """
         vector = array(self.mesh.GetNodeXYZ(node_id))
-        trafo_vec = self.inv_trafo(vector)
+        trafo_vec = self.trafo(vector)
         self._makeChecks(trafo_vec)
         trafo_vec[-1] = 0.0
-        proj_vec = self.trafo(trafo_vec)
+        proj_vec = self.inv_trafo(trafo_vec)
 
-        return proj_vec.reshape(DIMENSION) - vector.reshape(DIMENSION)
+        return proj_vec.reshape(DIMENSION)
         
     def distribution(self):
         """
@@ -1192,7 +1192,7 @@ class PlaneProjectionVectorField(MultiLayerVectorField):
         """
         return 1.0/self.nr_layers
 
-    def MoveSurface(self,group=None):
+    def moveSurface(self,group=None):
         """
         This method applies the vector field on a surface and creates
         a translated one. Optional the new surface can be stored in a new mesh.
@@ -1227,11 +1227,13 @@ class PlaneProjectionVectorField(MultiLayerVectorField):
         """
         node_vec = array(self.mesh.GetNodeXYZ(node_id))
         if self._vectors is None:
-            vector = self.computeSingleProjection(node_id)*self.distribution()
+            vector = (self.computeSingleProjection(node_id)*self.distribution())
+
         else:
             original_id = self._current_table[node_id]
             internal_id = self._internal_ids[original_id]
             vector = self._vectors[:,internal_id]*self.distribution()
-            
-        return node_vec + vector
+
+        vector = vector.reshape(DIMENSION) #flatten vector
+        return vector - node_vec
         
