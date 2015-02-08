@@ -1146,6 +1146,7 @@ class PlaneProjectionVectorField(MultiLayerVectorField):
             to_check = array([trafo_vecs[-1]])
         else:
             to_check = trafo_vecs[-1,:]
+            
         if not self.signum is None: 
             if self.signunm > 0:
                 if not all(to_check >= self.d):
@@ -1164,7 +1165,8 @@ class PlaneProjectionVectorField(MultiLayerVectorField):
         """
         vectors = self.getNodeVectors(group)
         traf_vecs = copy(self.trafo(vectors))
-        self._makeChecks(traf_vecs)
+        if not (self.signum is None and self.d == 0):
+            self._makeChecks(traf_vecs)
         traf_vecs[-1,:] = 0.0
         proj_vecs = self.inv_trafo(traf_vecs)
         
@@ -1180,7 +1182,9 @@ class PlaneProjectionVectorField(MultiLayerVectorField):
         """
         vector = array(self.mesh.GetNodeXYZ(node_id))
         trafo_vec = self.trafo(vector)
-        self._makeChecks(trafo_vec)
+        if not (self.signum is None and self.d == 0):
+            self._makeChecks(trafo_vec)
+
         trafo_vec[-1] = 0.0
         proj_vec = self.inv_trafo(trafo_vec)
 
@@ -1230,8 +1234,12 @@ class PlaneProjectionVectorField(MultiLayerVectorField):
             vector = (self.computeSingleProjection(node_id)*self.distribution())
 
         else:
-            original_id = self._current_table[node_id]
-            internal_id = self._internal_ids[original_id]
+            if self._current_table:
+                original_id = self._current_table[node_id]
+                internal_id = self._internal_ids[original_id]
+            else:
+                internal_id = self._internal_ids[node_id]
+                
             vector = self._vectors[:,internal_id]*self.distribution()
 
         vector = vector.reshape(DIMENSION) #flatten vector
