@@ -1310,7 +1310,7 @@ class FaceProjectVectorField(MultiLayerVectorField):
             else:
                 raise ValueError("Error: Geometric Object is not a face or shell!")
         else:
-            raise ValueError("Error: Geometric Object is not a face shell!")
+            raise ValueError("Error: Geometric Object is not a face or shell!")
 
 
         if d < 0:
