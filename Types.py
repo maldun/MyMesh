@@ -48,7 +48,7 @@ smesh =  smeshBuilder.New(salome.myStudy)
 
 #from smesh import GetFilter
 GetFilter = smesh.GetFilter
-from SMESH import EDGE, FACE, VOLUME, FT_LinearOrQuadratic, Geom_TRIANGLE, Geom_QUADRANGLE
+from SMESH import EDGE, FACE, SHELL, VOLUME, FT_LinearOrQuadratic, Geom_TRIANGLE, Geom_QUADRANGLE
 
 from numpy import array, ndarray, arange, cross, zeros, inner, append
 from numpy import sum, apply_along_axis, copy
@@ -1271,16 +1271,16 @@ class FaceProjectVectorField(MultiLayerVectorField):
         - `face`: geometric object which is a face
         - `d`: Real number which represents the minimal distance between the currrent surface and the plane.
         """
-        from MyGeom.Types import MyGeomObject, MyFace
+        from MyGeom.Types import MyGeomObject, MyFace, MyShell
         if isinstance(face,MyGeomObject) and isinstance(face,MyFace):
             self.face = face.getGeomObject()
         elif isinstance(face,GEOM._objref_GEOM_Object):
-            if face.GetShapeType() == GEOM.FACE:
+            if face.GetShapeType() == GEOM.FACE or face.GetShapeType() == GEOM.SHELL:
                 self.face = face
             else:
-                raise ValueError("Error: Geometric Object is not a face!")
+                raise ValueError("Error: Geometric Object is not a face or shell!")
         else:
-            raise ValueError("Error: Geometric Object is not a face!")
+            raise ValueError("Error: Geometric Object is not a face shell!")
 
 
         if d < 0:
