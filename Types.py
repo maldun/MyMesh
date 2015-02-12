@@ -937,6 +937,36 @@ class MeanCurvatureNormal(NormalVectorField):
         
         return self.meanCurvatureNormalFormula(elems,node_id,voroni=True)
 
+class GroupDependentNormalVectorField(NormalVectorField):
+    """
+    The multiplication factor of this normal vector field depends on the group
+    on which the current node lies.
+    """
+    def __init__(self,mesh, scalar = 1.0, special_groups = [], special_scalar_factors =[],
+                 restricted_group=None):
+
+        if len(special_groups) != len(special_scalar_factors):
+            raise ValueError("Error: Number of Groups does not match number of scalar factors!")
+            
+        self.special_groups = [set(group.GetNodeIDs()) for group in special_groups]
+        self.special_scalar_factors = special_scalar_factors
+
+        super(GroupDependentNormalVectorField,self).__init__(mesh,scalar=scalar,
+                                                             restricted_group = restricted_group)
+
+    def computeVectorOnNode(self,node_id):
+        """
+        We compute the normal in one node,
+        with help of the mean normal formula.
+        """
+        
+        result = super(GroupDependentNormalVectorField,self).computeVectorOnNode(node_id)
+        for i in range(len(self.special_scalar_factors)):
+            if node_id in self.special_groups[i]:
+                result *= self.special_scalar_factors[i]
+
+        return result
+        
 ############################################################################################
 class MultiLayerVectorField(VectorField):
     """
