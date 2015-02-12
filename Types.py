@@ -1301,16 +1301,16 @@ class FaceProjectVectorField(MultiLayerVectorField):
         - `face`: geometric object which is a face
         - `d`: Real number which represents the minimal distance between the currrent surface and the plane.
         """
-        from MyGeom.Types import MyGeomObject, MyFace, MyShell
-        if isinstance(face,MyGeomObject) and (isinstance(face,MyFace) or isinstance(face,MyShell)):
+        from MyGeom.Types import MyGeomObject, MyFace
+        if isinstance(face,MyGeomObject) and isinstance(face,MyFace):
             self.face = face.getGeomObject()
         elif isinstance(face,GEOM._objref_GEOM_Object):
-            if face.GetShapeType() == GEOM.FACE or face.GetShapeType() == GEOM.SHELL:
+            if face.GetShapeType() == GEOM.FACE:
                 self.face = face
             else:
-                raise ValueError("Error: Geometric Object is not a face or shell!")
+                raise ValueError("Error: Geometric Object is not a face!")
         else:
-            raise ValueError("Error: Geometric Object is not a face or shell!")
+            raise ValueError("Error: Geometric Object is not a face!")
 
 
         if d < 0:
