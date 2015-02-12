@@ -48,7 +48,7 @@ smesh =  smeshBuilder.New(salome.myStudy)
 
 #from smesh import GetFilter
 GetFilter = smesh.GetFilter
-from SMESH import EDGE, FACE, SHELL, VOLUME, FT_LinearOrQuadratic, Geom_TRIANGLE, Geom_QUADRANGLE
+from SMESH import EDGE, FACE, VOLUME, FT_LinearOrQuadratic, Geom_TRIANGLE, Geom_QUADRANGLE
 
 from numpy import array, ndarray, arange, cross, zeros, inner, append
 from numpy import sum, apply_along_axis, copy
