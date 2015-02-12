@@ -1302,7 +1302,7 @@ class FaceProjectVectorField(MultiLayerVectorField):
         - `d`: Real number which represents the minimal distance between the currrent surface and the plane.
         """
         from MyGeom.Types import MyGeomObject, MyFace, MyShell
-        if isinstance(face,MyGeomObject) and ( isinstance(face,MyFace) or isinstance(face,MyShell):
+        if isinstance(face,MyGeomObject) and (isinstance(face,MyFace) or isinstance(face,MyShell)):
             self.face = face.getGeomObject()
         elif isinstance(face,GEOM._objref_GEOM_Object):
             if face.GetShapeType() == GEOM.FACE or face.GetShapeType() == GEOM.SHELL:
