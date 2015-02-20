@@ -105,9 +105,9 @@ def compute_voroni_area_of_triangle(w1,w2,l1,l2):
     #Else use formula on page 9 in [1]
     return ((1/tan(w1))*inner(l2,l2) + (1/tan(w2))*inner(l1,l1))/8.0
 
-def compute_gravity_center(mesh,group=None):
+def compute_gravity_center(mesh,group=None,element_ids = []):
     u"""
-    Computes the center of gravity of a mesh (or of a group), by
+    Computes the center of gravity of a face mesh (or of a face group), by
     the discrete formula
 
         (Σₑ area(e)·Sₑ)/(Σₑ area(e)).
@@ -119,9 +119,13 @@ def compute_gravity_center(mesh,group=None):
     ids_tri = mesh.GetIdsFromFilter(filter_linear_tri)
     ids_quad = mesh.GetIdsFromFilter(filter_linear_quad)
 
-    if group is None:
+    if group is None and element_ids == []:
         tria3 = [Tria3(mesh,id_tri) for id_tri in ids_tri]
         quad4 = [Tria3(mesh,id_tri) for id_tri in ids_tri]
+    elif group is None and element_ids != []:
+        group_ids = set(element_ids)
+        tria3 = [Tria3(mesh,id_tri) for id_tri in ids_tri if id_tri in group_ids]
+        quad4 = [Tria3(mesh,id_tri) for id_tri in ids_tri if id_tri in group_ids]
     else:
         group_ids = set(group.GetIDs())
         tria3 = [Tria3(mesh,id_tri) for id_tri in ids_tri if id_tri in group_ids]
