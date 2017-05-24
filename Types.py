@@ -55,6 +55,7 @@ from numpy import sum, apply_along_axis, copy
 from numpy.linalg import norm
 from numpy import float64 as data_type
 from numpy import arccos, tan, pi
+import numpy as np
 
 # Nr. of dimension
 DIMENSION=3
@@ -937,6 +938,89 @@ class MeanCurvatureNormal(NormalVectorField):
         
         return self.meanCurvatureNormalFormula(elems,node_id,voroni=True)
 
+class SalomeNormalField(VectorField):
+    """
+    This normal vector field reverse engineers the salome extrusion
+    method for better results, whithout much effort.
+    """
+
+    def __init__(self,mesh, scalar = 1.0, restricted_group=None,ByAverageNormal=False):
+
+        super(SalomeNormalField,self).__init__(mesh,scalar,restricted_group)
+        self.vec_dict = dict([])
+        self.eps = 1e-6
+        self.prefix = '_N_'
+        self.ByAverageNormal = ByAverageNormal
+        
+        self.updateField(self.restricted_group)
+        
+    def updateField(self,face_group):
+
+        new_mesh = self.prepareMesh(face_group)
+        new_mesh, node_grps = self.createNodeGrps(new_mesh)
+        new_mesh, top_node_grps = self.preExtrusion(new_mesh,self.ByAverageNormal)
+        self._getNodeCoords(new_mesh,node_grps,top_node_grps)
+        new_mesh.Clear()
+        del new_mesh
+        
+    def prepareMesh(self,face_group=None):
+
+        if face_group is None: 
+            new_mesh = smesh.CopyMesh(self.mesh,'help_mesh',toKeepIDs = True)
+        else:
+            new_mesh = smesh.CopyMesh(face_group,'help_mesh',toKeepIDs = True)
+
+        return new_mesh
+
+    def createNodeGrps(self,new_mesh):
+
+        nodes = new_mesh.GetNodesId()
+        node_grps = [new_mesh.MakeGroupByIds(self.prefix+str(node), SMESH.NODE, [node]) for node in nodes]
+        return new_mesh, node_grps
+
+    def preExtrusion(self,new_mesh,ByAverageNormal=False):
+
+        top_node_grps = new_mesh.ExtrusionByNormal(new_mesh,1.0,1,ByAverageNormal,MakeGroups=True)
+        #top_node_groups = [grp for grp in top_groups if '_N_' in grp.GetName()]
+        return new_mesh, top_node_grps
+
+    def _computeVector(self,vec1,vec2):
+        vec1 = np.array(vec1,dtype=float)
+        vec2 = np.array(vec2,dtype=float)
+
+        vec = vec2-vec1
+        norm = np.linalg.norm(vec)
+        if norm < self.eps:
+            raise ValueError("Error: Vectors are nearly the same!")
+        vec /= norm
+        return vec
+    
+    def _getNodeCoords(self,new_mesh,node_grps,top_node_grps):
+
+        top_names = [grp.GetName() for grp in top_node_grps]
+        for grp in node_grps:
+            node_id = grp.GetIDs()[0]
+            vec1 = new_mesh.GetNodeXYZ(node_id)
+            index = top_names.index(grp.GetName()+'_top')
+            top_grp = top_node_grps[index]
+            node_id2 = top_grp.GetIDs()[0]
+            vec2 = new_mesh.GetNodeXYZ(node_id2)
+
+            vec = self._computeVector(vec1,vec2)
+            self.vec_dict.update([[node_id,vec]])
+
+    def extrudeSurface(self,group=None, edge_groups = [], face_groups = [], create_boundary_elements = True):
+        result = super(SalomeNormalField,self).extrudeSurface(group,edge_groups,face_groups,create_boundary_elements)
+        self.updateField(result[0])
+        return result
+        
+    def computeVectorOnNode(self,node_id):
+
+        return self.vec_dict[node_id]
+            
+            
+
+    
 class GroupDependentNormalVectorField(NormalVectorField):
     """
     The multiplication factor of this normal vector field depends on the group
