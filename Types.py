@@ -942,6 +942,8 @@ class SalomeNormalField(VectorField):
     """
     This normal vector field reverse engineers the salome extrusion
     method for better results, whithout much effort.
+    The vectors are computed once and stored in a dict to have a
+    fast mapping.
     """
 
     def __init__(self,mesh, scalar = 1.0, restricted_group=None,ByAverageNormal=False):
@@ -955,7 +957,9 @@ class SalomeNormalField(VectorField):
         self.updateField(self.restricted_group)
         
     def updateField(self,face_group):
-
+        """
+        Updates the dict from a given surface group
+        """
         new_mesh = self.prepareMesh(face_group)
         new_mesh, node_grps = self.createNodeGrps(new_mesh)
         new_mesh, top_node_grps = self.preExtrusion(new_mesh,self.ByAverageNormal)
@@ -964,7 +968,9 @@ class SalomeNormalField(VectorField):
         del new_mesh
         
     def prepareMesh(self,face_group=None):
-
+        """
+        Necessary preparation steps.
+        """
         if face_group is None: 
             new_mesh = smesh.CopyMesh(self.mesh,'help_mesh',toKeepIDs = True)
         else:
@@ -973,18 +979,24 @@ class SalomeNormalField(VectorField):
         return new_mesh
 
     def createNodeGrps(self,new_mesh):
-
+        """
+        Generates the node groups to have a proper mapping between top and below.
+        """
         nodes = new_mesh.GetNodesId()
         node_grps = [new_mesh.MakeGroupByIds(self.prefix+str(node), SMESH.NODE, [node]) for node in nodes]
         return new_mesh, node_grps
 
     def preExtrusion(self,new_mesh,ByAverageNormal=False):
-
+        """
+        Executes Salome Extrusion to get the top nodes.
+        """
         top_node_grps = new_mesh.ExtrusionByNormal(new_mesh,1.0,1,ByAverageNormal,MakeGroups=True)
-        #top_node_groups = [grp for grp in top_groups if '_N_' in grp.GetName()]
         return new_mesh, top_node_grps
 
     def _computeVector(self,vec1,vec2):
+        """
+        Computes the vector between 2 points vec1 and vec2.
+        """
         vec1 = np.array(vec1,dtype=float)
         vec2 = np.array(vec2,dtype=float)
 
@@ -996,7 +1008,10 @@ class SalomeNormalField(VectorField):
         return vec
     
     def _getNodeCoords(self,new_mesh,node_grps,top_node_grps):
-
+        """
+        Get the node coordinates of the point and his duplicate on the upper surface,
+        and computes the vector to store it in the dict.
+        """
         top_names = [grp.GetName() for grp in top_node_grps]
         for grp in node_grps:
             node_id = grp.GetIDs()[0]
@@ -1010,12 +1025,15 @@ class SalomeNormalField(VectorField):
             self.vec_dict.update([[node_id,vec]])
 
     def extrudeSurface(self,group=None, edge_groups = [], face_groups = [], create_boundary_elements = True):
+        """
+        Slight modification for the surface extrusion: After a new surface is generated the field has to
+        be updated.
+        """
         result = super(SalomeNormalField,self).extrudeSurface(group,edge_groups,face_groups,create_boundary_elements)
         self.updateField(result[0])
         return result
         
     def computeVectorOnNode(self,node_id):
-
         return self.vec_dict[node_id]
             
             
