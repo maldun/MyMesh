@@ -60,6 +60,12 @@ def find_mesh(descriptive_string):
     mesh = salome.myStudy.FindObject(descriptive_string).GetObject()
     return smesh.Mesh(mesh) #,descriptive_string)
 
+def load_mesh_from_file(filename):
+    """
+    Help function wich loads a mesh from a file.
+    """
+    return smesh.CreateMeshesFromMED(filename)[0][0]
+
 
 def apply_linear_elements(mesh,elem_ids):
     """
