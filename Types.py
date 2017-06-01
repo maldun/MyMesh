@@ -1049,9 +1049,11 @@ class GroupDependentNormalVectorField(NormalVectorField):
 
         if len(special_groups) != len(special_scalar_factors):
             raise ValueError("Error: Number of Groups does not match number of scalar factors!")
-            
-        self.special_groups = [set(group.GetNodeIDs()) for group in special_groups]
-        self.special_scalar_factors = special_scalar_factors
+
+        self.special_groups_list = []
+        self.special_groups = []
+        self.special_scalar_factors = []
+        self.updateSpecialGroups(special_groups,special_scalar_factors)
 
         super(GroupDependentNormalVectorField,self).__init__(mesh,scalar=scalar,
                                                              restricted_group = restricted_group)
@@ -1069,6 +1071,26 @@ class GroupDependentNormalVectorField(NormalVectorField):
 
         return result
 
+    def updateSpecialGroups(self,new_groups,new_factors):
+        """
+        As name suggests, adds new groups to the lists of special groups and adds the new factors
+        """
+        self.special_groups += [set(group.GetNodeIDs()) for group in new_groups]
+        self.special_groups_list += new_groups
+
+        self.special_scalar_factors += new_factors
+    
+    def extrudeSurface(self,group=None, edge_groups = [], face_groups = [], create_boundary_elements = True):
+        """
+        Slight modification for the surface extrusion: After a new surface is generated the field has to
+        be updated.
+        """
+        result = super(NormalVectorField,self).extrudeSurface(group,edge_groups,face_groups+self.special_groups_list,create_boundary_elements)
+        new_special_face_groups = result[4][len(face_groups):]
+        self.updateSpecialGroups(new_special_face_groups,self.special_scalar_factors)
+        return result
+ 
+
 class SalomeGroupDependentNormalVectorField(SalomeNormalField):
     """
     The multiplication factor of this normal vector field depends on the group
@@ -1084,7 +1106,8 @@ class SalomeGroupDependentNormalVectorField(SalomeNormalField):
         self.special_scalar_factors = special_scalar_factors
 
         super(SalomeGroupDependentNormalVectorField,self).__init__(mesh,scalar=scalar,
-                                                             restricted_group = restricted_group,ByAverageNormal)
+                                                             restricted_group = restricted_group,
+                                                                   ByAverageNormal = ByAverageNormal)
 
     def computeVectorOnNode(self,node_id):
         """
